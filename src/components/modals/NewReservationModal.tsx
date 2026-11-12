@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { MealPlan, Room } from '../../types/hotel';
+import { formatPKR } from '../../data/mockData';
+import { MealPlan, Room, PakistaniPaymentMethod } from '../../types/hotel';
 import { X, Calendar, DollarSign, Bed, Users, Shield, Check } from 'lucide-react';
 
 export const NewReservationModal: React.FC = () => {
@@ -19,8 +20,8 @@ export const NewReservationModal: React.FC = () => {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
-  const [guestPassport, setGuestPassport] = useState('');
-  const [nationality, setNationality] = useState('United States');
+  const [guestCnicOrPassport, setGuestCnicOrPassport] = useState('');
+  const [cityOrCountry, setCityOrCountry] = useState('Islamabad, Pakistan');
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [checkInDate, setCheckInDate] = useState(currentDate);
   const [checkOutDate, setCheckOutDate] = useState(() => {
@@ -30,13 +31,12 @@ export const NewReservationModal: React.FC = () => {
   });
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
-  const [mealPlan, setMealPlan] = useState<MealPlan>('Bed & Breakfast');
-  const [paymentMethod, setPaymentMethod] = useState<'Credit Card' | 'Cash' | 'Bank Transfer' | 'Corporate Account'>('Credit Card');
+  const [mealPlan, setMealPlan] = useState<MealPlan>('Desi & Continental Breakfast');
+  const [paymentMethod, setPaymentMethod] = useState<PakistaniPaymentMethod>('Raast / Bank Transfer');
   const [depositPaid, setDepositPaid] = useState<number>(0);
   const [specialRequests, setSpecialRequests] = useState('');
   const [checkInImmediately, setCheckInImmediately] = useState(false);
 
-  // Set default room or quick check in room
   useEffect(() => {
     if (quickCheckInRoom) {
       setSelectedRoomId(quickCheckInRoom.id);
@@ -50,21 +50,21 @@ export const NewReservationModal: React.FC = () => {
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
 
-  // Calculate pricing
+  // Calculate pricing in PKR
   const checkIn = new Date(checkInDate);
   const checkOut = new Date(checkOutDate);
   const nightsCount = Math.max(1, Math.ceil(Math.max(0, checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
 
   let mealRatePerNight = 0;
-  if (mealPlan === 'Bed & Breakfast') mealRatePerNight = 30 * adults;
-  if (mealPlan === 'Half Board') mealRatePerNight = 70 * adults;
-  if (mealPlan === 'All Inclusive') mealRatePerNight = 140 * adults;
+  if (mealPlan === 'Desi & Continental Breakfast') mealRatePerNight = 2500 * adults;
+  if (mealPlan === 'Half Board (Breakfast & Dinner Buffet)') mealRatePerNight = 6500 * adults;
+  if (mealPlan === 'Full Board (All Meals & Balti High Tea)') mealRatePerNight = 12000 * adults;
 
-  const roomTotal = (selectedRoom ? selectedRoom.ratePerNight : 240) * nightsCount;
+  const roomTotal = (selectedRoom ? selectedRoom.ratePerNight : 28000) * nightsCount;
   const mealPlanTotal = mealRatePerNight * nightsCount;
   const subtotal = roomTotal + mealPlanTotal;
-  const taxAmount = Math.round(subtotal * hotelInfo.taxRate * 100) / 100;
-  const totalEstimated = Math.round((subtotal + taxAmount) * 100) / 100;
+  const taxAmount = Math.round(subtotal * hotelInfo.taxRate);
+  const totalEstimated = subtotal + taxAmount;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,10 +72,10 @@ export const NewReservationModal: React.FC = () => {
 
     const res = createReservation({
       guestName,
-      guestEmail: guestEmail || `${guestName.toLowerCase().replace(/\s+/g, '.')}@guest.com`,
-      guestPhone: guestPhone || '+1 (555) 000-0000',
-      guestPassport: guestPassport || `P${Math.floor(1000000 + Math.random() * 9000000)}`,
-      nationality,
+      guestEmail: guestEmail || `${guestName.toLowerCase().replace(/\s+/g, '.')}@guest.pk`,
+      guestPhone: guestPhone || '+92 300 0000000',
+      guestCnicOrPassport: guestCnicOrPassport || `CNIC-${Math.floor(10000 + Math.random() * 90000)}`,
+      cityOrCountry,
       roomId: selectedRoomId,
       checkInDate,
       checkOutDate,
@@ -91,12 +91,12 @@ export const NewReservationModal: React.FC = () => {
       checkInReservation(res.id);
     }
 
-    // Reset & Close
     setIsNewReservationModalOpen(false);
     setQuickCheckInRoom(null);
     setGuestName('');
     setGuestEmail('');
     setGuestPhone('');
+    setGuestCnicOrPassport('');
     setSpecialRequests('');
   };
 
@@ -107,10 +107,10 @@ export const NewReservationModal: React.FC = () => {
         <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
-              Create New Guest Reservation
+              New Guest Reservation (PKR)
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {hotelInfo.name} · Real-time room allocation & billing setup
+              {hotelInfo.name} · Shigar Valley, Gilgit-Baltistan
             </p>
           </div>
           <button
@@ -126,10 +126,10 @@ export const NewReservationModal: React.FC = () => {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          {/* Section 1: Guest Information */}
+          {/* Guest Info */}
           <div className="space-y-3">
             <h4 className="font-semibold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800">
-              1. Guest Particulars
+              1. Guest Credentials & Identification
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -141,72 +141,73 @@ export const NewReservationModal: React.FC = () => {
                   required
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="e.g. Katherine Reynolds"
+                  placeholder="e.g. Zaheer Shigri"
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Email Address
+                  CNIC / Passport Number *
                 </label>
                 <input
-                  type="email"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  placeholder="katherine@example.com"
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                  type="text"
+                  required
+                  value={guestCnicOrPassport}
+                  onChange={(e) => setGuestCnicOrPassport(e.target.value)}
+                  placeholder="e.g. 71101-1234567-1 or Passport"
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Phone Number
+                  Mobile Number (WhatsApp)
                 </label>
                 <input
                   type="tel"
                   value={guestPhone}
                   onChange={(e) => setGuestPhone(e.target.value)}
-                  placeholder="+1 (555) 392-1092"
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                  placeholder="+92 345 5901234"
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Passport / ID Number
+                  City / Origin
                 </label>
                 <input
                   type="text"
-                  value={guestPassport}
-                  onChange={(e) => setGuestPassport(e.target.value)}
-                  placeholder="US9832011"
+                  value={cityOrCountry}
+                  onChange={(e) => setCityOrCountry(e.target.value)}
+                  placeholder="e.g. Islamabad, Lahore, Skardu, UK"
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 2: Room & Stay Dates */}
+          {/* Suite & Dates */}
           <div className="space-y-3 pt-2">
             <h4 className="font-semibold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800">
-              2. Suite Selection & Stay Dates
+              2. Heritage Suite Allocation & Dates
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-3">
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Assign Room Suite *
+                  Select Room Suite *
                 </label>
                 <select
                   value={selectedRoomId}
                   onChange={(e) => setSelectedRoomId(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none font-medium"
                 >
                   {rooms.map((r) => {
                     const isAvail = r.status === 'available';
                     return (
                       <option key={r.id} value={r.id}>
-                        Room #{r.number} — {r.type} (${r.ratePerNight}/nt, {r.bedType}) · {isAvail ? 'Available' : `(${r.status.toUpperCase()})`}
+                        Room #{r.number} — {r.type} ({formatPKR(r.ratePerNight)}/nt, {r.bedType}) · {isAvail ? 'Available' : `(${r.status.toUpperCase()})`}
                       </option>
                     );
                   })}
@@ -241,17 +242,17 @@ export const NewReservationModal: React.FC = () => {
 
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Meal Plan
+                  Dining Plan
                 </label>
                 <select
                   value={mealPlan}
                   onChange={(e) => setMealPlan(e.target.value as MealPlan)}
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
                 >
-                  <option value="Room Only">Room Only ($0)</option>
-                  <option value="Bed & Breakfast">Bed & Breakfast (+$30/guest)</option>
-                  <option value="Half Board">Half Board (+$70/guest)</option>
-                  <option value="All Inclusive">All Inclusive (+$140/guest)</option>
+                  <option value="Room Only">Room Only (PKR 0)</option>
+                  <option value="Desi & Continental Breakfast">Desi & Continental Breakfast (+PKR 2,500/guest)</option>
+                  <option value="Half Board (Breakfast & Dinner Buffet)">Half Board: Breakfast + Dinner (+PKR 6,500/guest)</option>
+                  <option value="Full Board (All Meals & Balti High Tea)">Full Board: All Meals & Balti Chai (+PKR 12,000/guest)</option>
                 </select>
               </div>
             </div>
@@ -287,68 +288,72 @@ export const NewReservationModal: React.FC = () => {
 
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Payment Method
+                  Pakistani Payment Channel
                 </label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value as any)}
                   className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
                 >
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Corporate Account">Corporate Account</option>
+                  <option value="Raast / Bank Transfer">Raast / Online Bank Transfer</option>
+                  <option value="EasyPaisa / JazzCash">EasyPaisa / JazzCash</option>
+                  <option value="Credit / Debit Card">Credit / Debit Card (POS)</option>
+                  <option value="Cash at Front Desk">Cash at Front Desk (PKR)</option>
+                  <option value="Corporate Account">Corporate / Govt Account</option>
                 </select>
               </div>
 
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Deposit Paid ($)
+                  Advance Paid (PKR)
                 </label>
                 <input
                   type="number"
                   min="0"
+                  step="1000"
                   value={depositPaid}
                   onChange={(e) => setDepositPaid(Number(e.target.value))}
                   placeholder="0"
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Special Requests / VIP Amenities
+                Special Requests (Heating, Shigar River View, Airport Pickup)
               </label>
               <input
                 type="text"
                 value={specialRequests}
                 onChange={(e) => setSpecialRequests(e.target.value)}
-                placeholder="e.g. Late check-in, feather-free pillows, airport transfer, champagne..."
+                placeholder="e.g. Flight PK-451 arrival, extra electric heater, Balti Trout dinner on arrival..."
                 className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Pricing Breakdown Card */}
+          {/* Pricing Breakdown Card in PKR */}
           <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-              <span>{nightsCount} Nights x ${selectedRoom?.ratePerNight || 240} (Room Lodging):</span>
-              <span className="font-mono tabular-nums">${roomTotal.toFixed(2)}</span>
+              <span>{nightsCount} Nights x {formatPKR(selectedRoom?.ratePerNight || 28000)} (Suite Lodging):</span>
+              <span className="font-mono tabular-nums">{formatPKR(roomTotal)}</span>
             </div>
             {mealPlanTotal > 0 && (
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
                 <span>Meal Plan ({mealPlan}):</span>
-                <span className="font-mono tabular-nums">${mealPlanTotal.toFixed(2)}</span>
+                <span className="font-mono tabular-nums">{formatPKR(mealPlanTotal)}</span>
               </div>
             )}
             <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-              <span>Occupancy & Resort Tax (10%):</span>
-              <span className="font-mono tabular-nums">${taxAmount.toFixed(2)}</span>
+              <span>GB Tourism & Provincial GST (13%):</span>
+              <span className="font-mono tabular-nums">{formatPKR(taxAmount)}</span>
             </div>
             <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between font-bold text-slate-900 dark:text-white text-sm">
               <span>Total Estimated Folio:</span>
-              <span className="font-mono tabular-nums text-base">${totalEstimated.toFixed(2)}</span>
+              <span className="font-mono tabular-nums text-base text-amber-600 dark:text-amber-400">
+                {formatPKR(totalEstimated)}
+              </span>
             </div>
           </div>
 
@@ -362,7 +367,7 @@ export const NewReservationModal: React.FC = () => {
               className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500"
             />
             <label htmlFor="checkInImmediately" className="text-slate-700 dark:text-slate-300 font-medium">
-              Guest is already present at front desk — Check in immediately & mark room occupied
+              Guest is present in Shigar — Check-in immediately & hand over room keys
             </label>
           </div>
 
@@ -382,7 +387,7 @@ export const NewReservationModal: React.FC = () => {
               type="submit"
               className="px-5 py-2 bg-slate-900 dark:bg-amber-600 text-white font-semibold rounded-lg hover:bg-slate-800 dark:hover:bg-amber-500 shadow-sm"
             >
-              Confirm Reservation & Book Room
+              Confirm Booking & Issue Ref
             </button>
           </div>
         </form>

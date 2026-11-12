@@ -1,21 +1,21 @@
 import React from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { formatPKR } from '../../data/mockData';
 import {
   Bed,
   Users,
   LogIn,
   LogOut,
-  DollarSign,
-  TrendingUp,
   Sparkles,
   ArrowRight,
   CheckCircle2,
   Clock,
-  AlertCircle,
   Plus,
   Key,
   Receipt,
-  Eye
+  Eye,
+  Shield,
+  Banknote
 } from 'lucide-react';
 
 interface DashboardOverviewProps {
@@ -36,35 +36,37 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
     setIsNewReservationModalOpen,
     setIsAddChargeModalOpen,
     setReservationForCharge,
+    isAdmin,
+    isManager,
+    currentUser,
   } = useHotel();
 
-  // Group rooms by floor
   const floors = [1, 2, 3, 4];
 
   return (
     <div className="space-y-6">
-      {/* Hero Welcome Banner */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900 text-white min-h-[170px] flex flex-col justify-end p-6">
+      {/* Hero Welcome Banner with Mashakala Resort Shigar Image */}
+      <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900 text-white min-h-[190px] flex flex-col justify-end p-6">
         <img
-          src="/src/assets/images/hotel_facade_exterior_1794504248900.jpg"
-          alt="AuraStay Palace Exterior"
+          src="/src/assets/images/mashakala_resort_shigar_1794505830708.jpg"
+          alt="Mashakala Resort Shigar Exterior"
           referrerPolicy="no-referrer"
-          className="absolute inset-0 w-full h-full object-cover opacity-35"
+          className="absolute inset-0 w-full h-full object-cover opacity-45"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/65 to-transparent" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-medium text-amber-400 mb-1">
               <span>{hotelInfo.tagline}</span>
               <span aria-hidden="true">·</span>
-              <span>Front Desk Operations</span>
+              <span className="font-semibold">{isAdmin ? 'Admin Console' : 'Manager Operations'}</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-display text-white">
               {hotelInfo.name}
             </h1>
-            <p className="text-sm text-slate-300 max-w-xl mt-1">
-              Live operational briefing for <span className="font-mono text-white font-medium">{currentDate}</span>. Managing 20 suites across 4 wings.
+            <p className="text-xs text-slate-300 max-w-xl mt-1">
+              Live operational console for <span className="font-mono text-white font-medium">{currentDate}</span>. Managing {rooms.length} heritage suites in Shigar Valley.
             </p>
           </div>
 
@@ -73,20 +75,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
               onClick={() => setActiveTab('rooms')}
               className="px-4 py-2 text-xs font-medium text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-colors whitespace-nowrap"
             >
-              View Tape Chart
+              View Room Matrix
             </button>
             <button
               onClick={() => setIsNewReservationModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg transition-colors whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
-              <span>Walk-in Check-In</span>
+              <span>New Reservation</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Primary KPI Grid (6 metrics) */}
+      {/* Primary KPI Grid (6 metrics in PKR) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
@@ -136,20 +138,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
             {stats.activeInHouse.reduce((acc, curr) => acc + curr.adults + curr.children, 0)}
           </div>
           <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-            Across {stats.occupiedRooms} active rooms
+            Across {stats.occupiedRooms} active suites
           </div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
             <span>Daily Room Rev</span>
-            <DollarSign className="w-4 h-4 text-emerald-500" />
+            <Banknote className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="mt-2 text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
-            ${stats.todayRevenue.toLocaleString()}
+          <div className="mt-2 text-lg font-bold font-mono text-slate-900 dark:text-white tabular-nums truncate">
+            {formatPKR(stats.todayRevenue)}
           </div>
-          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-            ADR: ${stats.adr}
+          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+            ADR: {formatPKR(stats.adr)}
           </div>
         </div>
 
@@ -167,26 +169,26 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
         </div>
       </div>
 
-      {/* Main Split: Today's Arrival / In-House Action Queue + Interactive Room Floor Map */}
+      {/* Main Split: Arrivals / In-House Queue + Room Status Matrix */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Today's Arrivals & Operations (7 cols) */}
+        {/* Left Column: Today's Arrivals & In-House (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
           {/* Today's Expected Arrivals */}
           <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
-                  Today's Expected Arrivals
+                  Today's Expected Arrivals ({stats.todayArrivals.length})
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Guests arriving on {currentDate} requiring check-in & keycard assignment
+                  Guests arriving in Shigar on {currentDate}
                 </p>
               </div>
               <button
                 onClick={() => setActiveTab('reservations')}
                 className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
               >
-                <span>View all bookings</span>
+                <span>All reservations</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -202,7 +204,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
               <div className="space-y-2.5">
                 {stats.todayArrivals.map((res) => {
                   const isCheckedIn = res.status === 'checked_in';
-                  const room = rooms.find((r) => r.id === res.roomId);
 
                   return (
                     <div
@@ -227,7 +228,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
                             <span aria-hidden="true">·</span>
                             <span>{res.nightsCount} nights</span>
                             <span aria-hidden="true">·</span>
-                            <span>{res.mealPlan}</span>
+                            <span className="font-mono text-amber-600 dark:text-amber-400">{formatPKR(res.totalAmount)}</span>
                           </div>
                           {res.specialRequests && (
                             <p className="text-[11px] text-amber-700 dark:text-amber-300/90 italic mt-1 truncate">
@@ -244,7 +245,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
                           className="px-2.5 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors flex items-center gap-1"
                         >
                           <Receipt className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Folio</span>
+                          <span>Folio</span>
                         </button>
 
                         {isCheckedIn ? (
@@ -269,7 +270,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
             )}
           </div>
 
-          {/* Active In-House Guests with Quick Folio & Extra Charge Actions */}
+          {/* Currently In-House Guests */}
           <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -277,7 +278,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
                   Currently In-House ({stats.activeInHouse.length})
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Occupied suites with ongoing billing and front desk service
+                  Occupied suites with ongoing billing in PKR
                 </p>
               </div>
             </div>
@@ -294,7 +295,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
                         {res.guestName}
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Departing: <span className="font-mono">{res.checkOutDate}</span> · Folio: <span className="font-mono font-medium">${res.totalAmount.toFixed(2)}</span>
+                        Departure: <span className="font-mono">{res.checkOutDate}</span> · Folio: <span className="font-mono font-medium">{formatPKR(res.totalAmount)}</span>
                       </div>
                     </div>
                   </div>
@@ -317,7 +318,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
                     </button>
                     <button
                       onClick={() => {
-                        if (confirm(`Check out guest ${res.guestName} from Room ${res.roomNumber}? This will mark room dirty for housekeeping.`)) {
+                        if (confirm(`Check out guest ${res.guestName} from Room ${res.roomNumber}?`)) {
                           checkOutReservation(res.id);
                         }
                       }}
@@ -341,17 +342,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
           </div>
         </div>
 
-        {/* Right Column: Visual Room Map & Quick Room Statuses (5 cols) */}
+        {/* Right Column: Visual Room Map (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Interactive Room Grid / Mini Map */}
           <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
-                  Property Room Status Map
+                  Resort Room Status Map
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Click any room to view guest or trigger actions
+                  Click any room to view details, rates, or housekeeping
                 </p>
               </div>
               <button
@@ -371,10 +371,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Occupied ({stats.occupiedRooms})
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Dirty/Cleaning ({stats.dirtyRooms})
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Dirty ({stats.dirtyRooms})
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Maintenance ({stats.maintenanceRooms})
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Maint ({stats.maintenanceRooms})
               </span>
             </div>
 
@@ -385,7 +385,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
                 return (
                   <div key={floor} className="space-y-1.5">
                     <div className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                      Floor {floor} {floor === 4 ? '· Penthouse' : floor === 3 ? '· Executive Club' : floor === 2 ? '· Deluxe Wing' : '· Garden Level'}
+                      Floor {floor} {floor === 4 ? '· Royal Penthouse' : floor === 3 ? '· Executive Wing' : floor === 2 ? '· Karakoram Wing' : '· Apricot Garden'}
                     </div>
                     <div className="grid grid-cols-5 gap-2">
                       {floorRooms.map((room) => {
@@ -420,41 +420,28 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveT
             </div>
           </div>
 
-          {/* Quick Property Amenities & Photo Showcase Card */}
-          <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <div className="relative h-36">
-              <img
-                src="/src/assets/images/hotel_suite_interior_1794504249585.jpg"
-                alt="Penthouse Interior"
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-4">
-                <div className="text-white">
-                  <div className="text-xs font-semibold">Executive & Presidential Wing</div>
-                  <div className="text-[11px] text-slate-300">High occupancy rate today (80%)</div>
-                </div>
-              </div>
+          {/* Quick Property Amenities Card */}
+          <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+            <div className="font-semibold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
+              Shigar Valley Operations Summary
             </div>
-            <div className="p-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
-              <div className="flex items-center justify-between">
-                <span>Staff On Duty:</span>
-                <span className="font-mono font-semibold text-slate-900 dark:text-white">
-                  {stats.onDutyStaffCount} Active
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Average Daily Rate (ADR):</span>
-                <span className="font-mono font-semibold text-slate-900 dark:text-white">
-                  ${stats.adr}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>RevPAR:</span>
-                <span className="font-mono font-semibold text-slate-900 dark:text-white">
-                  ${stats.revPAR}
-                </span>
-              </div>
+            <div className="flex items-center justify-between">
+              <span>On Duty Staff:</span>
+              <span className="font-mono font-semibold text-slate-900 dark:text-white">
+                {stats.onDutyStaffCount} Active
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Average Daily Rate (ADR):</span>
+              <span className="font-mono font-semibold text-slate-900 dark:text-white">
+                {formatPKR(stats.adr)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Total Active Billed:</span>
+              <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                {formatPKR(stats.totalActiveRevenue)}
+              </span>
             </div>
           </div>
         </div>

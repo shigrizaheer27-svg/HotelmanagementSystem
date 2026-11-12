@@ -1,6 +1,6 @@
 {
-  "name": "AuraStay - Hotel & Property Management System",
-  "description": "Comprehensive hotel management system with real-time room reservations, front desk operations, interactive room grid, housekeeping tracking, staff management, and guest billing folios.",
+  "name": "Mashakala Resort Shigar - PMS & Finance (PKR)",
+  "description": "Comprehensive hotel management system for Mashakala Resort Shigar, Gilgit-Baltistan with PKR finance calculations, room reservations, staff rosters, housekeeping, and guest billing folios.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { formatPKR } from '../../data/mockData';
 import { GuestProfile } from '../../types/hotel';
 import {
   UserCheck,
@@ -18,7 +19,6 @@ export const GuestCRMView: React.FC = () => {
   const { guests, reservations, setSelectedReservationForFolio } = useHotel();
   const [searchQuery, setSearchQuery] = useState('');
   const [vipFilter, setVipFilter] = useState<string>('all');
-  const [selectedGuest, setSelectedGuest] = useState<GuestProfile | null>(null);
 
   const filteredGuests = guests.filter((g) => {
     if (vipFilter !== 'all' && g.vipStatus !== vipFilter) return false;
@@ -27,8 +27,8 @@ export const GuestCRMView: React.FC = () => {
       return (
         g.name.toLowerCase().includes(q) ||
         g.email.toLowerCase().includes(q) ||
-        g.passportNumber.toLowerCase().includes(q) ||
-        g.nationality.toLowerCase().includes(q)
+        g.cnicOrPassport.toLowerCase().includes(q) ||
+        g.cityOrCountry.toLowerCase().includes(q)
       );
     }
     return true;
@@ -69,12 +69,14 @@ export const GuestCRMView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">
-            Guest Directory & Hospitality CRM
+            Guest CRM & Loyalty Directory (PKR)
           </h2>
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            <span>{guests.length} Registered Profiles</span>
+            <span>{guests.length} Registered Guest Profiles</span>
             <span aria-hidden="true">·</span>
-            <span>VIP loyalty tiers & historical preferences</span>
+            <span>CNIC & Passport verification</span>
+            <span aria-hidden="true">·</span>
+            <span>Mashakala Resort Shigar</span>
           </div>
         </div>
       </div>
@@ -103,7 +105,7 @@ export const GuestCRMView: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by guest name, passport, country..."
+            placeholder="Search by name, CNIC, city..."
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
           />
         </div>
@@ -113,7 +115,7 @@ export const GuestCRMView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredGuests.map((guest) => {
           const guestReservations = reservations.filter(
-            (r) => r.guestEmail.toLowerCase() === guest.email.toLowerCase()
+            (r) => r.guestEmail.toLowerCase() === guest.email.toLowerCase() || r.guestName.toLowerCase() === guest.name.toLowerCase()
           );
 
           return (
@@ -128,7 +130,7 @@ export const GuestCRMView: React.FC = () => {
                       {guest.name}
                     </h3>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {guest.nationality} · Passport: <span className="font-mono">{guest.passportNumber}</span>
+                      {guest.cityOrCountry} · CNIC: <span className="font-mono">{guest.cnicOrPassport}</span>
                     </div>
                   </div>
                   {getVipBadge(guest.vipStatus)}
@@ -153,9 +155,9 @@ export const GuestCRMView: React.FC = () => {
                     </div>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <div className="text-[11px] text-slate-400">Total Spend</div>
-                    <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                      ${guest.totalSpend.toLocaleString()}
+                    <div className="text-[11px] text-slate-400">Lifetime Spend</div>
+                    <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs truncate">
+                      {formatPKR(guest.totalSpend)}
                     </div>
                   </div>
                 </div>

@@ -16,12 +16,14 @@ import { RoomDetailModal } from './components/modals/RoomDetailModal';
 import { AddChargeModal } from './components/modals/AddChargeModal';
 import { NewStaffModal } from './components/modals/NewStaffModal';
 import { ReportMaintenanceModal } from './components/modals/ReportMaintenanceModal';
+import { RoomFormModal } from './components/modals/RoomFormModal';
+import { ReservationEditModal } from './components/modals/ReservationEditModal';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('aurastay_theme') === 'dark';
+      return localStorage.getItem('mashakala_theme') === 'dark';
     } catch {
       return false;
     }
@@ -30,16 +32,16 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('aurastay_theme', 'dark');
+      localStorage.setItem('mashakala_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('aurastay_theme', 'light');
+      localStorage.setItem('mashakala_theme', 'light');
     }
   }, [darkMode]);
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-amber-500 selection:text-white transition-colors duration-150">
-      {/* Top Bar following 3-Zone Contract */}
+      {/* Top Bar with Brand wordmark, navigation, and Auth / Role switcher */}
       <Navbar
         darkMode={darkMode}
         setDarkMode={setDarkMode}
@@ -65,13 +67,15 @@ const AppContent: React.FC = () => {
         </main>
       </div>
 
-      {/* Global PMS Modals */}
+      {/* Global PMS & Admin Modals */}
       <NewReservationModal />
       <GuestFolioModal />
       <RoomDetailModal />
       <AddChargeModal />
       <NewStaffModal />
       <ReportMaintenanceModal />
+      <RoomFormModal />
+      <ReservationEditModal />
     </div>
   );
 };

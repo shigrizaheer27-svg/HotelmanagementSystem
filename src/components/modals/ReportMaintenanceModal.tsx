@@ -14,7 +14,7 @@ export const ReportMaintenanceModal: React.FC = () => {
 
   const [roomId, setRoomId] = useState(rooms[0]?.id || '');
   const [issueTitle, setIssueTitle] = useState('');
-  const [category, setCategory] = useState<MaintenanceRequest['category']>('HVAC / AC');
+  const [category, setCategory] = useState<MaintenanceRequest['category']>('Heating & Water Geyser');
   const [priority, setPriority] = useState<MaintenanceRequest['priority']>('high');
   const [assignedStaffId, setAssignedStaffId] = useState('');
   const [notes, setNotes] = useState('');
@@ -55,7 +55,7 @@ export const ReportMaintenanceModal: React.FC = () => {
               Report Engineering / Maintenance Issue
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Dispatches work ticket to facilities maintenance lead
+              Dispatches work ticket to facilities & generator maintenance lead
             </p>
           </div>
           <button
@@ -94,12 +94,12 @@ export const ReportMaintenanceModal: React.FC = () => {
                 onChange={(e) => setCategory(e.target.value as any)}
                 className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
               >
-                <option value="HVAC / AC">HVAC / Thermostat / AC</option>
-                <option value="Plumbing">Plumbing / Water Pressure</option>
-                <option value="Electrical">Electrical / Lighting</option>
-                <option value="Keycard Lock">Electronic RFID Lock</option>
-                <option value="Furniture">Furniture & Fixtures</option>
-                <option value="Appliances">TV / Mini Fridge / Safe</option>
+                <option value="Heating & Water Geyser">Heating & Italian Geyser</option>
+                <option value="Generator / Electrical">Generator Backup & Electrical</option>
+                <option value="Plumbing">Plumbing & Water Flow</option>
+                <option value="Room Lock">Room RFID Lock</option>
+                <option value="Woodwork & Furniture">Walnut Woodwork & Fireplace</option>
+                <option value="Appliances">Room Heater / TV / Starlink</option>
               </select>
             </div>
 
@@ -144,7 +144,7 @@ export const ReportMaintenanceModal: React.FC = () => {
             >
               <option value="">Engineering Queue (Auto-dispatch)</option>
               {staff
-                .filter((s) => s.department === 'Engineering')
+                .filter((s) => s.department === 'Engineering & Generator')
                 .map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name} ({s.role})

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { formatPKR } from '../../data/mockData';
 import { ExtraCharge } from '../../types/hotel';
 import { X, DollarSign, Utensils, Sparkles, Wine, Shirt, Car, Tag } from 'lucide-react';
 
@@ -12,9 +13,9 @@ export const AddChargeModal: React.FC = () => {
     addExtraCharge,
   } = useHotel();
 
-  const [category, setCategory] = useState<ExtraCharge['category']>('Room Service');
+  const [category, setCategory] = useState<ExtraCharge['category']>('Balti & Desi Dining');
   const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState<number>(45.00);
+  const [amount, setAmount] = useState<number>(6500);
   const [addedBy, setAddedBy] = useState('Front Desk Staff');
 
   if (!isAddChargeModalOpen || !reservationForCharge) return null;
@@ -22,13 +23,13 @@ export const AddChargeModal: React.FC = () => {
   const res = reservationForCharge;
 
   const quickPresets = [
-    { label: 'Artisan Breakfast Room Service', cat: 'Room Service', amt: 38 },
-    { label: 'Kobe Wagyu Burger & Truffle Fries', cat: 'Room Service', amt: 48 },
-    { label: 'Dom Pérignon Vintage Champagne', cat: 'Mini Bar', amt: 290 },
-    { label: 'San Pellegrino & Evian Restock', cat: 'Mini Bar', amt: 24 },
-    { label: 'Swedish Relaxation Massage (60 min)', cat: 'Spa & Wellness', amt: 160 },
-    { label: 'Same-Day Silk Suit Pressing', cat: 'Laundry', amt: 45 },
-    { label: 'Private Airport Chauffeur Transfer', cat: 'Airport Transfer', amt: 95 },
+    { label: 'Fresh Shigar River Trout Barbecue Dinner (2p)', cat: 'Bonfire & Trout BBQ', amt: 8500 },
+    { label: 'Traditional Balti Mutton Karahi & Roghani Naan', cat: 'Balti & Desi Dining', amt: 6800 },
+    { label: '4x4 Prado Safari to Sarfaranga Cold Desert', cat: 'Jeep Safari / Tour', amt: 24000 },
+    { label: 'Skardu Airport (KDU) Luxury Return Transfer', cat: 'Skardu Airport Transfer', amt: 12000 },
+    { label: 'Organic Shigar Valley Dried Apricots & Walnuts Box', cat: 'Minibar & Dry Fruits', amt: 4500 },
+    { label: 'Evening Garden Pine Wood Bonfire Setup', cat: 'Bonfire & Trout BBQ', amt: 5000 },
+    { label: 'Extra Room Geyser & Heated Radiator Logs', cat: 'Laundry & Heating', amt: 3000 },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,7 +46,7 @@ export const AddChargeModal: React.FC = () => {
     setIsAddChargeModalOpen(false);
     setReservationForCharge(null);
     setDescription('');
-    setAmount(45);
+    setAmount(6500);
   };
 
   return (
@@ -54,7 +55,7 @@ export const AddChargeModal: React.FC = () => {
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
-              Post Incidentals / Room Charge
+              Post Room Charge (PKR)
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Room #{res.roomNumber} · {res.guestName}
@@ -71,10 +72,10 @@ export const AddChargeModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Quick Presets */}
+        {/* Quick Presets for Mashakala Resort Shigar */}
         <div>
           <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            Quick Presets
+            Shigar Resort Presets
           </span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {quickPresets.slice(0, 4).map((p) => (
@@ -88,7 +89,7 @@ export const AddChargeModal: React.FC = () => {
                 }}
                 className="px-2 py-1 text-[11px] rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
               >
-                {p.label.split(' ')[0]} ${p.amt}
+                {p.label.split(' ')[0]} {formatPKR(p.amt)}
               </button>
             ))}
           </div>
@@ -104,12 +105,13 @@ export const AddChargeModal: React.FC = () => {
               onChange={(e) => setCategory(e.target.value as any)}
               className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
             >
-              <option value="Room Service">Room Service / F&B</option>
-              <option value="Mini Bar">Mini Bar</option>
-              <option value="Spa & Wellness">Spa & Wellness</option>
-              <option value="Laundry">Laundry & Dry Cleaning</option>
-              <option value="Airport Transfer">Airport Transfer</option>
-              <option value="Other">Other Ancillary</option>
+              <option value="Balti & Desi Dining">Balti & Desi Kitchen Dining</option>
+              <option value="Bonfire & Trout BBQ">Bonfire & River Trout BBQ</option>
+              <option value="Jeep Safari / Tour">4x4 Jeep Safari (Sarfaranga / Deosai)</option>
+              <option value="Skardu Airport Transfer">Skardu Airport Transfer (KDU)</option>
+              <option value="Minibar & Dry Fruits">Organic Dry Fruits & Minibar</option>
+              <option value="Laundry & Heating">Laundry, Heating & Blankets</option>
+              <option value="Other">Other Resort Incidentals</option>
             </select>
           </div>
 
@@ -122,7 +124,7 @@ export const AddChargeModal: React.FC = () => {
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. In-Suite Champagne Service"
+              placeholder="e.g. Shigar River Trout Dinner for 2 Guests"
               className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
             />
           </div>
@@ -130,12 +132,12 @@ export const AddChargeModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Charge Amount ($) *
+                Charge Amount (PKR) *
               </label>
               <input
                 type="number"
-                step="0.01"
-                min="0.5"
+                step="100"
+                min="100"
                 required
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
@@ -145,7 +147,7 @@ export const AddChargeModal: React.FC = () => {
 
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Billed By Staff
+                Posted By
               </label>
               <input
                 type="text"
@@ -171,7 +173,7 @@ export const AddChargeModal: React.FC = () => {
               type="submit"
               className="px-4 py-2 bg-slate-900 dark:bg-amber-600 text-white font-semibold rounded-lg hover:bg-slate-800 dark:hover:bg-amber-500 shadow-sm"
             >
-              Post Charge to Folio
+              Post Charge ({formatPKR(amount)})
             </button>
           </div>
         </form>

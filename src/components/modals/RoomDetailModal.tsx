@@ -1,5 +1,6 @@
 import React from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { formatPKR } from '../../data/mockData';
 import {
   X,
   Bed,
@@ -8,10 +9,12 @@ import {
   Wrench,
   Calendar,
   CheckCircle2,
-  DollarSign,
   Receipt,
   LogOut,
-  Plus
+  Plus,
+  Edit2,
+  Trash2,
+  Shield
 } from 'lucide-react';
 
 export const RoomDetailModal: React.FC = () => {
@@ -27,6 +30,10 @@ export const RoomDetailModal: React.FC = () => {
     setQuickCheckInRoom,
     setIsAddChargeModalOpen,
     setReservationForCharge,
+    isAdmin,
+    setIsRoomFormModalOpen,
+    setRoomToEdit,
+    deleteRoom,
   } = useHotel();
 
   if (!selectedRoomForDetail) return null;
@@ -36,7 +43,6 @@ export const RoomDetailModal: React.FC = () => {
   const isMaintenance = room.status === 'maintenance';
   const isDirty = room.housekeeping === 'dirty' || room.housekeeping === 'cleaning_in_progress';
 
-  // Find active reservation if occupied
   const currentRes = reservations.find(
     (r) => r.id === room.currentReservationId || (r.roomId === room.id && r.status === 'checked_in')
   );
@@ -47,7 +53,7 @@ export const RoomDetailModal: React.FC = () => {
         {/* Header with Photo Banner */}
         <div className="relative h-44 bg-slate-900">
           <img
-            src="/src/assets/images/hotel_suite_interior_1794504249585.jpg"
+            src="/src/assets/images/mashakala_resort_shigar_1794505830708.jpg"
             alt={room.type}
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover opacity-80"
@@ -76,9 +82,9 @@ export const RoomDetailModal: React.FC = () => {
 
             <div className="text-right">
               <div className="text-xl font-bold font-mono text-amber-400">
-                ${room.ratePerNight}
+                {formatPKR(room.ratePerNight)}
               </div>
-              <div className="text-[10px] text-slate-300">per night + tax</div>
+              <div className="text-[10px] text-slate-300">per night + 13% tax</div>
             </div>
           </div>
         </div>
@@ -102,7 +108,7 @@ export const RoomDetailModal: React.FC = () => {
               </div>
             </div>
             <div>
-              <div className="text-[10px] text-slate-400">Cleanliness</div>
+              <div className="text-[10px] text-slate-400">Housekeeping</div>
               <div className="font-semibold text-slate-800 dark:text-slate-200 capitalize mt-0.5">
                 {room.housekeeping.replace('_', ' ')}
               </div>
@@ -125,7 +131,7 @@ export const RoomDetailModal: React.FC = () => {
               </div>
               <div className="text-slate-600 dark:text-slate-300 text-[11px] space-y-0.5">
                 <div>Stay: <span className="font-mono">{currentRes.checkInDate}</span> to <span className="font-mono">{currentRes.checkOutDate}</span> ({currentRes.nightsCount} nights)</div>
-                <div>Folio Ledger: <span className="font-mono font-semibold">${currentRes.totalAmount.toFixed(2)}</span> (Paid: ${currentRes.paidAmount.toFixed(2)})</div>
+                <div>Folio Ledger: <span className="font-mono font-semibold">{formatPKR(currentRes.totalAmount)}</span> (Paid: {formatPKR(currentRes.paidAmount)})</div>
               </div>
 
               <div className="pt-2 flex items-center gap-2">
@@ -165,7 +171,7 @@ export const RoomDetailModal: React.FC = () => {
             <div className="p-4 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center justify-between">
               <div>
                 <div className="font-bold text-emerald-950 dark:text-emerald-200 text-xs">
-                  Available for Check-In
+                  Available for Reservation
                 </div>
                 <div className="text-[11px] text-emerald-700 dark:text-emerald-400">
                   Ready to assign to incoming or walk-in guest
@@ -188,7 +194,7 @@ export const RoomDetailModal: React.FC = () => {
           {/* Amenities */}
           <div>
             <div className="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
-              Room Amenities & Features
+              Suite Amenities & Heating
             </div>
             <div className="flex flex-wrap gap-1.5">
               {room.amenities.map((item) => (
@@ -204,16 +210,24 @@ export const RoomDetailModal: React.FC = () => {
 
           {/* Quick Housekeeping & Maintenance Controls */}
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            <div className="font-semibold text-slate-800 dark:text-slate-200">
-              Operations Controls
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                Operations & Admin Controls
+              </span>
+              {isAdmin && (
+                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                  ADMIN POWERS
+                </span>
+              )}
             </div>
+
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => updateHousekeepingStatus(room.id, 'inspected')}
                 className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded font-medium flex items-center gap-1 transition-colors"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Set Inspected & Clean</span>
+                <span>Set Clean</span>
               </button>
 
               <button
@@ -221,7 +235,7 @@ export const RoomDetailModal: React.FC = () => {
                 className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded font-medium flex items-center gap-1 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Set Needs Cleaning</span>
+                <span>Set Dirty</span>
               </button>
 
               <button
@@ -239,9 +253,24 @@ export const RoomDetailModal: React.FC = () => {
               >
                 <Wrench className="w-3.5 h-3.5 text-red-500" />
                 <span>
-                  {room.status === 'maintenance' ? 'Take Out of Maint.' : 'Put in Maintenance'}
+                  {room.status === 'maintenance' ? 'Exit Maint.' : 'Maintenance'}
                 </span>
               </button>
+
+              {/* ADMIN ONLY: Edit / Delete Room */}
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setSelectedRoomForDetail(null);
+                    setRoomToEdit(room);
+                    setIsRoomFormModalOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded font-medium flex items-center gap-1 transition-colors ml-auto"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Edit Rate / Specs (Admin)</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

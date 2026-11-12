@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { formatPKR } from '../../data/mockData';
 import {
   Receipt,
-  DollarSign,
   CreditCard,
   PlusCircle,
   Eye,
@@ -21,20 +21,17 @@ export const BillingOverview: React.FC = () => {
     setReservationForCharge,
     stats,
     hotelInfo,
+    isAdmin,
   } = useHotel();
 
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
 
-  // Compute breakdown across all reservations
   const allExtras = reservations.flatMap((r) => (r.status !== 'cancelled' ? r.extras : []));
   const diningTotal = allExtras
-    .filter((e) => e.category === 'Room Service')
+    .filter((e) => e.category === 'Balti & Desi Dining' || e.category === 'Bonfire & Trout BBQ')
     .reduce((acc, curr) => acc + curr.amount, 0);
-  const spaTotal = allExtras
-    .filter((e) => e.category === 'Spa & Wellness')
-    .reduce((acc, curr) => acc + curr.amount, 0);
-  const miniBarTotal = allExtras
-    .filter((e) => e.category === 'Mini Bar')
+  const toursTotal = allExtras
+    .filter((e) => e.category === 'Jeep Safari / Tour' || e.category === 'Skardu Airport Transfer')
     .reduce((acc, curr) => acc + curr.amount, 0);
   const totalRoomRevenue = reservations
     .filter((r) => r.status !== 'cancelled')
@@ -58,57 +55,57 @@ export const BillingOverview: React.FC = () => {
       {/* Title */}
       <div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">
-          Guest Billing & Revenue Operations
+          Finance, Guest Billing & Ledgers (PKR)
         </h2>
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          <span>Itemized ledgers</span>
+          <span>Mashakala Resort Shigar</span>
           <span aria-hidden="true">·</span>
-          <span>Room charges & ancillary revenue</span>
+          <span>PKR currency ledgers</span>
           <span aria-hidden="true">·</span>
-          <span>Invoice receipts</span>
+          <span>13% Provincial GST & GB Tourism Levy</span>
         </div>
       </div>
 
-      {/* Revenue Department Cards */}
+      {/* Revenue Department Cards in PKR */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Billed Rev</span>
-          <div className="mt-1.5 text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
-            ${Math.round(totalRevenue).toLocaleString()}
+          <div className="mt-1.5 text-xl font-bold font-mono text-slate-900 dark:text-white tabular-nums truncate">
+            {formatPKR(totalRevenue)}
           </div>
-          <div className="mt-1 text-[11px] text-slate-400 font-mono">Combined ledger</div>
+          <div className="mt-1 text-[11px] text-slate-400 font-mono">All booking ledgers</div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Room Lodging</span>
-          <div className="mt-1.5 text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
-            ${Math.round(totalRoomRevenue).toLocaleString()}
+          <div className="mt-1.5 text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 tabular-nums truncate">
+            {formatPKR(totalRoomRevenue)}
           </div>
           <div className="mt-1 text-[11px] text-slate-400 font-mono">Base room nights</div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">F&B Room Service</span>
-          <div className="mt-1.5 text-2xl font-bold font-mono text-amber-500 tabular-nums">
-            ${Math.round(diningTotal).toLocaleString()}
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Balti F&B / BBQ</span>
+          <div className="mt-1.5 text-xl font-bold font-mono text-amber-500 tabular-nums truncate">
+            {formatPKR(diningTotal)}
           </div>
-          <div className="mt-1 text-[11px] text-slate-400 font-mono">Kitchen orders</div>
+          <div className="mt-1 text-[11px] text-slate-400 font-mono">Trout BBQ & Karahi</div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Spa & Wellness</span>
-          <div className="mt-1.5 text-2xl font-bold font-mono text-purple-600 dark:text-purple-400 tabular-nums">
-            ${Math.round(spaTotal).toLocaleString()}
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Safaris & Transfers</span>
+          <div className="mt-1.5 text-xl font-bold font-mono text-purple-600 dark:text-purple-400 tabular-nums truncate">
+            {formatPKR(toursTotal)}
           </div>
-          <div className="mt-1 text-[11px] text-slate-400 font-mono">Therapy sessions</div>
+          <div className="mt-1 text-[11px] text-slate-400 font-mono">4x4 Sarfaranga / KDU</div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Taxes & City Fees</span>
-          <div className="mt-1.5 text-2xl font-bold font-mono text-blue-600 dark:text-blue-400 tabular-nums">
-            ${Math.round(totalTaxes).toLocaleString()}
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">GB Tourism Tax (13%)</span>
+          <div className="mt-1.5 text-xl font-bold font-mono text-blue-600 dark:text-blue-400 tabular-nums truncate">
+            {formatPKR(totalTaxes)}
           </div>
-          <div className="mt-1 text-[11px] text-slate-400 font-mono">10% statutory rate</div>
+          <div className="mt-1 text-[11px] text-slate-400 font-mono">Provincial Levy</div>
         </div>
       </div>
 
@@ -148,7 +145,7 @@ export const BillingOverview: React.FC = () => {
         </div>
       </div>
 
-      {/* Guest Accounts & Billing Ledger Table */}
+      {/* Guest Accounts & Billing Ledger Table in PKR */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -157,11 +154,11 @@ export const BillingOverview: React.FC = () => {
                 <th className="p-3.5 font-semibold">Folio Ref</th>
                 <th className="p-3.5 font-semibold">Guest Name</th>
                 <th className="p-3.5 font-semibold">Room #</th>
-                <th className="p-3.5 font-semibold text-right">Room Nights</th>
-                <th className="p-3.5 font-semibold text-right">Ancillary Extras</th>
-                <th className="p-3.5 font-semibold text-right">Taxes</th>
+                <th className="p-3.5 font-semibold text-right">Lodging Total</th>
+                <th className="p-3.5 font-semibold text-right">F&B & Tours</th>
+                <th className="p-3.5 font-semibold text-right">Tax (13%)</th>
                 <th className="p-3.5 font-semibold text-right">Total Bill</th>
-                <th className="p-3.5 font-semibold text-right">Amount Paid</th>
+                <th className="p-3.5 font-semibold text-right">Paid Amount</th>
                 <th className="p-3.5 font-semibold text-right">Balance Due</th>
                 <th className="p-3.5 font-semibold text-right">Actions</th>
               </tr>
@@ -188,32 +185,32 @@ export const BillingOverview: React.FC = () => {
                     </td>
 
                     <td className="p-3.5 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
-                      ${res.roomTotal.toFixed(2)}
+                      {formatPKR(res.roomTotal)}
                     </td>
 
                     <td className="p-3.5 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
-                      ${res.extrasTotal.toFixed(2)}
+                      {formatPKR(res.extrasTotal)}
                     </td>
 
                     <td className="p-3.5 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
-                      ${res.taxAmount.toFixed(2)}
+                      {formatPKR(res.taxAmount)}
                     </td>
 
                     <td className="p-3.5 text-right font-mono font-bold text-slate-900 dark:text-white tabular-nums">
-                      ${res.totalAmount.toFixed(2)}
+                      {formatPKR(res.totalAmount)}
                     </td>
 
                     <td className="p-3.5 text-right font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
-                      ${res.paidAmount.toFixed(2)}
+                      {formatPKR(res.paidAmount)}
                     </td>
 
                     <td className="p-3.5 text-right font-mono font-bold tabular-nums">
                       {balanceDue > 0 ? (
                         <span className="text-red-600 dark:text-red-400">
-                          ${balanceDue.toFixed(2)}
+                          {formatPKR(balanceDue)}
                         </span>
                       ) : (
-                        <span className="text-slate-400">Paid ($0.00)</span>
+                        <span className="text-slate-400">Settled (PKR 0)</span>
                       )}
                     </td>
 

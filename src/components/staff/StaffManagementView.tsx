@@ -13,12 +13,12 @@ import {
   Coffee,
   Moon,
   Sun,
-  AlertCircle,
+  Trash2,
   Briefcase
 } from 'lucide-react';
 
 export const StaffManagementView: React.FC = () => {
-  const { staff, toggleStaffDuty, setIsNewStaffModalOpen, stats } = useHotel();
+  const { staff, toggleStaffDuty, setIsNewStaffModalOpen, deleteStaffMember, isAdmin, isManager, stats } = useHotel();
 
   const [deptFilter, setDeptFilter] = useState<string>('all');
   const [shiftFilter, setShiftFilter] = useState<string>('all');
@@ -29,10 +29,12 @@ export const StaffManagementView: React.FC = () => {
     if (shiftFilter !== 'all' && !member.shift.toLowerCase().includes(shiftFilter.toLowerCase())) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = member.name.toLowerCase().includes(q);
-      const matchRole = member.role.toLowerCase().includes(q);
-      const matchDept = member.department.toLowerCase().includes(q);
-      return matchName || matchRole || matchDept;
+      return (
+        member.name.toLowerCase().includes(q) ||
+        member.role.toLowerCase().includes(q) ||
+        member.department.toLowerCase().includes(q) ||
+        member.phone.includes(q)
+      );
     }
     return true;
   });
@@ -50,7 +52,7 @@ export const StaffManagementView: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>On Break</span>
+            <span>Tea Break</span>
           </span>
         );
       case 'off_duty':
@@ -64,7 +66,7 @@ export const StaffManagementView: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400">
             <span className="w-2 h-2 rounded-full bg-purple-500" />
-            <span>Approved Leave</span>
+            <span>On Leave</span>
           </span>
         );
     }
@@ -73,9 +75,9 @@ export const StaffManagementView: React.FC = () => {
   const departments: Department[] = [
     'Front Office',
     'Housekeeping',
-    'Food & Beverage',
-    'Engineering',
-    'Security',
+    'Kitchen & Balti Dining',
+    'Engineering & Generator',
+    'Tours & Security',
     'Management',
   ];
 
@@ -85,24 +87,27 @@ export const StaffManagementView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">
-            Staff Directory & Shift Roster
+            Staff Directory & Shift Roster · Mashakala Resort
           </h2>
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             <span>{staff.length} Team Members</span>
             <span aria-hidden="true">·</span>
             <span>{stats.onDutyStaffCount} Active On Duty</span>
             <span aria-hidden="true">·</span>
-            <span>3 Operating Shifts</span>
+            <span>{isAdmin ? 'Admin Full Access' : 'Manager Operations Access'}</span>
           </div>
         </div>
 
-        <button
-          onClick={() => setIsNewStaffModalOpen(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 dark:bg-amber-600 hover:bg-slate-800 dark:hover:bg-amber-500 rounded-lg shadow-sm transition-colors whitespace-nowrap self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Staff Member</span>
-        </button>
+        {/* ADMIN ACTION: Add Staff */}
+        {isAdmin && (
+          <button
+            onClick={() => setIsNewStaffModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 dark:bg-amber-600 hover:bg-slate-800 dark:hover:bg-amber-500 rounded-lg shadow-sm transition-colors whitespace-nowrap self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Onboard Staff Member (Admin)</span>
+          </button>
+        )}
       </div>
 
       {/* 3 Shifts Roster Strip */}
@@ -118,7 +123,7 @@ export const StaffManagementView: React.FC = () => {
             {staff.filter((s) => s.shift.includes('Morning') && s.status === 'on_duty').length} Active
           </div>
           <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-            Front Desk, Housekeeping turnovers & Breakfast brigade
+            Front desk, Desi breakfast brigade & morning room turnovers
           </p>
         </div>
 
@@ -133,7 +138,7 @@ export const StaffManagementView: React.FC = () => {
             {staff.filter((s) => s.shift.includes('Evening') && s.status === 'on_duty').length} Active
           </div>
           <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-            Check-ins, Concierge dining, Evening turn-down
+            Shigar arrivals, Trout BBQ, Bonfire setup & turn-down service
           </p>
         </div>
 
@@ -148,7 +153,7 @@ export const StaffManagementView: React.FC = () => {
             {staff.filter((s) => s.shift.includes('Night') && s.status === 'on_duty').length} Active
           </div>
           <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-            Night audit close, Late arrivals & Security patrol
+            Resort perimeter security, generator watch & night audit ledger
           </p>
         </div>
       </div>
@@ -190,7 +195,7 @@ export const StaffManagementView: React.FC = () => {
             <option value="all">All Shifts</option>
             <option value="Morning">Morning Shift</option>
             <option value="Evening">Evening Shift</option>
-            <option value="Night">Night Shift</option>
+            <option value="Night">Night Audit Shift</option>
           </select>
         </div>
       </div>
@@ -204,7 +209,6 @@ export const StaffManagementView: React.FC = () => {
               className="p-4.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm transition-all flex flex-col justify-between"
             >
               <div>
-                {/* Header: Avatar, Name, Role, & Duty Indicator */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center font-display border border-slate-200 dark:border-slate-700 shrink-0">
@@ -222,7 +226,6 @@ export const StaffManagementView: React.FC = () => {
                   <div>{getDutyStatusBadge(member.status)}</div>
                 </div>
 
-                {/* Meta details */}
                 <div className="mt-3.5 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex items-center justify-between">
                     <span>Department:</span>
@@ -244,7 +247,7 @@ export const StaffManagementView: React.FC = () => {
                   </div>
                   {member.assignedRooms && member.assignedRooms.length > 0 && (
                     <div className="flex items-center justify-between">
-                      <span>Assigned Units:</span>
+                      <span>Assigned Suites:</span>
                       <span className="font-mono text-slate-700 dark:text-slate-300 font-medium">
                         {member.assignedRooms.map((r) => `#${r}`).join(', ')}
                       </span>
@@ -260,28 +263,45 @@ export const StaffManagementView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Bottom Quick Action: Duty State Toggle */}
+              {/* Bottom Quick Action: Duty State Toggle & Admin Delete */}
               <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                 <span className="text-[11px] text-slate-400">
                   Hired: <span className="font-mono">{member.hireDate}</span>
                 </span>
 
-                <button
-                  onClick={() => toggleStaffDuty(member.id)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                    member.status === 'on_duty'
-                      ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200'
+                <div className="flex items-center gap-1.5">
+                  {/* ADMIN ACTION: Delete Staff */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Administrator: Remove staff profile for ${member.name} (${member.role})?`)) {
+                          deleteStaffMember(member.id);
+                        }
+                      }}
+                      title="Terminate / Remove Staff Profile (Admin Only)"
+                      className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => toggleStaffDuty(member.id)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                      member.status === 'on_duty'
+                        ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200'
+                        : member.status === 'break'
+                        ? 'bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    }`}
+                  >
+                    {member.status === 'on_duty'
+                      ? 'Tea Break'
                       : member.status === 'break'
-                      ? 'bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                      : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                  }`}
-                >
-                  {member.status === 'on_duty'
-                    ? 'Take Break'
-                    : member.status === 'break'
-                    ? 'Clock Out'
-                    : 'Clock In (On Duty)'}
-                </button>
+                      ? 'Clock Out'
+                      : 'Clock In'}
+                  </button>
+                </div>
               </div>
             </div>
           );

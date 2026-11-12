@@ -1,5 +1,6 @@
 import React from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { formatPKR } from '../../data/mockData';
 import {
   LayoutDashboard,
   BedDouble,
@@ -8,6 +9,8 @@ import {
   Sparkles,
   Receipt,
   UserCheck,
+  Shield,
+  UserCheck2,
   Wrench,
   ChevronRight,
   ShieldAlert,
@@ -20,7 +23,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { stats, hotelInfo } = useHotel();
+  const { stats, hotelInfo, currentUser, isAdmin, isManager } = useHotel();
 
   const navItems = [
     {
@@ -33,16 +36,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     },
     {
       id: 'rooms',
-      label: 'Room Matrix',
-      subtext: '20 Rooms · 4 Floors',
+      label: 'Room Matrix & Rates',
+      subtext: `${stats.totalRooms} Rooms · 4 Floors`,
       icon: BedDouble,
       badge: `${stats.occupiedRooms}/${stats.totalRooms}`,
       badgeColor: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 font-mono',
     },
     {
       id: 'reservations',
-      label: 'Reservations Hub',
-      subtext: 'Bookings & Check-In',
+      label: 'Bookings & Folios',
+      subtext: 'Check-In / Out Hub',
       icon: CalendarCheck,
       badge: stats.activeInHouse.length > 0 ? `${stats.activeInHouse.length} Active` : undefined,
       badgeColor: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300',
@@ -58,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     {
       id: 'housekeeping',
       label: 'Housekeeping & Maint.',
-      subtext: 'Cleaning & Work Orders',
+      subtext: 'Cleaning & Geysers',
       icon: Sparkles,
       badge: stats.pendingTasksCount > 0 ? `${stats.pendingTasksCount} Tasks` : undefined,
       badgeColor: 'text-purple-700 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-300',
@@ -66,19 +69,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     {
       id: 'guests',
       label: 'Guest Directory (CRM)',
-      subtext: 'Profiles & VIP History',
+      subtext: 'CNIC & VIP Profiles',
       icon: UserCheck,
     },
     {
       id: 'billing',
-      label: 'Billing & Folios',
-      subtext: 'Invoices & Extra Charges',
+      label: 'PKR Finance & Ledgers',
+      subtext: 'Revenue & Invoicing',
       icon: Receipt,
     },
   ];
 
   return (
     <aside className="w-64 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-[calc(100vh-61px)] sticky top-[61px] select-none">
+      {/* Current User Role Banner */}
+      <div className="p-3.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/40">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {isAdmin ? (
+              <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <UserCheck2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            )}
+            <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              {isAdmin ? 'Admin Console' : 'Manager Access'}
+            </span>
+          </div>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+            isAdmin ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300'
+          }`}>
+            {isAdmin ? 'FULL ACCESS' : 'MANAGERIAL'}
+          </span>
+        </div>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+          {isAdmin ? 'Can Add, Edit, Delete rooms, staff, bookings & data.' : 'Operational access: bookings, folios & tasks.'}
+        </p>
+      </div>
+
       {/* Quick Occupancy Gauge Pill */}
       <div className="p-4 border-b border-slate-100 dark:border-slate-800/80">
         <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
@@ -154,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         })}
       </nav>
 
-      {/* Urgent System Notice if urgent maintenance exists */}
+      {/* Urgent Maintenance Notice */}
       {stats.urgentMaintenanceCount > 0 && (
         <div className="p-3 mx-3 mb-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60">
           <div className="flex items-center gap-2 text-xs font-semibold text-red-800 dark:text-red-300">
@@ -162,26 +189,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             <span>Urgent Maintenance</span>
           </div>
           <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
-            {stats.urgentMaintenanceCount} priority request requires technician attention.
+            {stats.urgentMaintenanceCount} ticket (Geyser / Heating) requires attention.
           </p>
-          <button
-            onClick={() => setActiveTab('housekeeping')}
-            className="mt-2 text-[11px] font-medium text-red-700 dark:text-red-300 underline hover:no-underline flex items-center gap-1"
-          >
-            <span>Inspect tickets</span>
-            <ArrowUpRight className="w-3 h-3" />
-          </button>
         </div>
       )}
 
-      {/* Property & Staff Status in Footer */}
+      {/* Property & PKR Status in Footer */}
       <div className="p-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-slate-700 dark:text-slate-300">Front Office Shift</span>
-          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">Active</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">Resort Finance</span>
+          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">PKR (Rs.)</span>
         </div>
         <div className="mt-1 text-slate-400 dark:text-slate-500 text-[10px]">
-          RevPAR: <span className="font-mono font-medium text-slate-600 dark:text-slate-300">${stats.revPAR}</span> · ADR: <span className="font-mono font-medium text-slate-600 dark:text-slate-300">${stats.adr}</span>
+          RevPAR: <span className="font-mono font-medium text-slate-600 dark:text-slate-300">{formatPKR(stats.revPAR)}</span>
         </div>
       </div>
     </aside>

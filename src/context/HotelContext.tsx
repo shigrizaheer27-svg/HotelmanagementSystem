@@ -9,7 +9,10 @@ import {
   HousekeepingStatus,
   ExtraCharge,
   MealPlan,
-  RoomType
+  RoomType,
+  AuthUser,
+  UserRole,
+  PakistaniPaymentMethod
 } from '../types/hotel';
 import {
   INITIAL_ROOMS,
@@ -21,6 +24,44 @@ import {
   HOTEL_INFO
 } from '../data/mockData';
 
+export const PRESET_USERS: Record<string, AuthUser & { pass: string }> = {
+  admin: {
+    id: 'user-admin',
+    name: 'Haider Ali Shigri',
+    email: 'admin@mashakalaresort.pk',
+    role: 'admin',
+    designation: 'General Manager & System Admin',
+    avatarInitials: 'HA',
+    pass: 'admin123',
+  },
+  manager: {
+    id: 'user-manager',
+    name: 'Ali Shigri',
+    email: 'manager@mashakalaresort.pk',
+    role: 'manager',
+    designation: 'Front Desk Operations Manager',
+    avatarInitials: 'AS',
+    pass: 'manager123',
+  },
+};
+
+export interface NewReservationInput {
+  guestName: string;
+  guestEmail: string;
+  guestPhone: string;
+  guestCnicOrPassport: string;
+  cityOrCountry: string;
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  adults: number;
+  children: number;
+  mealPlan: MealPlan;
+  paymentMethod: PakistaniPaymentMethod;
+  initialPayment: number;
+  specialRequests?: string;
+}
+
 interface HotelContextType {
   hotelInfo: typeof HOTEL_INFO;
   rooms: Room[];
@@ -30,6 +71,14 @@ interface HotelContextType {
   maintenanceRequests: MaintenanceRequest[];
   guests: GuestProfile[];
   currentDate: string;
+
+  // Auth & Roles
+  currentUser: AuthUser | null;
+  login: (email: string, pass: string) => boolean;
+  logout: () => void;
+  switchRole: (role: UserRole) => void;
+  isAdmin: boolean;
+  isManager: boolean;
   
   // UI selection states & modals
   selectedRoomForDetail: Room | null;
@@ -49,7 +98,27 @@ interface HotelContextType {
   quickCheckInRoom: Room | null;
   setQuickCheckInRoom: (room: Room | null) => void;
 
-  // Actions
+  // Room Management (Admin/Manager)
+  isRoomFormModalOpen: boolean;
+  setIsRoomFormModalOpen: (open: boolean) => void;
+  roomToEdit: Room | null;
+  setRoomToEdit: (room: Room | null) => void;
+  addRoom: (roomData: Omit<Room, 'id'>) => void;
+  editRoom: (roomId: string, updates: Partial<Room>) => void;
+  deleteRoom: (roomId: string) => void;
+
+  // Reservation Editing (Admin)
+  reservationToEdit: Reservation | null;
+  setReservationToEdit: (res: Reservation | null) => void;
+  isReservationEditModalOpen: boolean;
+  setIsReservationEditModalOpen: (open: boolean) => void;
+  updateReservationDetails: (reservationId: string, updates: Partial<Reservation>) => void;
+  deleteReservation: (reservationId: string) => void;
+
+  // Staff Deletion (Admin)
+  deleteStaffMember: (staffId: string) => void;
+
+  // Standard PMS Actions
   checkInReservation: (reservationId: string) => void;
   checkOutReservation: (reservationId: string, paymentMethod?: string) => void;
   cancelReservation: (reservationId: string) => void;
@@ -67,7 +136,7 @@ interface HotelContextType {
   addOrUpdateGuest: (guest: Omit<GuestProfile, 'id'>) => GuestProfile;
   resetToDemoData: () => void;
 
-  // Computed metrics
+  // Computed metrics (PKR)
   stats: {
     totalRooms: number;
     occupiedRooms: number;
@@ -88,30 +157,14 @@ interface HotelContextType {
   };
 }
 
-export interface NewReservationInput {
-  guestName: string;
-  guestEmail: string;
-  guestPhone: string;
-  guestPassport: string;
-  nationality: string;
-  roomId: string;
-  checkInDate: string;
-  checkOutDate: string;
-  adults: number;
-  children: number;
-  mealPlan: MealPlan;
-  paymentMethod: 'Credit Card' | 'Cash' | 'Bank Transfer' | 'Corporate Account';
-  initialPayment: number;
-  specialRequests?: string;
-}
-
 const STORAGE_KEYS = {
-  ROOMS: 'aurastay_pms_rooms_v1',
-  RESERVATIONS: 'aurastay_pms_reservations_v1',
-  STAFF: 'aurastay_pms_staff_v1',
-  HOUSEKEEPING: 'aurastay_pms_housekeeping_v1',
-  MAINTENANCE: 'aurastay_pms_maintenance_v1',
-  GUESTS: 'aurastay_pms_guests_v1',
+  ROOMS: 'mashakala_pms_rooms_v2',
+  RESERVATIONS: 'mashakala_pms_reservations_v2',
+  STAFF: 'mashakala_pms_staff_v2',
+  HOUSEKEEPING: 'mashakala_pms_housekeeping_v2',
+  MAINTENANCE: 'mashakala_pms_maintenance_v2',
+  GUESTS: 'mashakala_pms_guests_v2',
+  AUTH: 'mashakala_pms_auth_v2',
 };
 
 const HotelContext = createContext<HotelContextType | undefined>(undefined);
@@ -119,7 +172,17 @@ const HotelContext = createContext<HotelContextType | undefined>(undefined);
 export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const currentDate = '2026-11-12';
 
-  // Initialize state from LocalStorage or defaults
+  // Auth state (defaults to Admin logged-in so user immediately has full capability)
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.AUTH);
+      return saved ? JSON.parse(saved) : PRESET_USERS.admin;
+    } catch {
+      return PRESET_USERS.admin;
+    }
+  });
+
+  // State initialization
   const [rooms, setRooms] = useState<Room[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ROOMS);
@@ -174,7 +237,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
-  // UI state
+  // UI modal states
   const [selectedRoomForDetail, setSelectedRoomForDetail] = useState<Room | null>(null);
   const [selectedReservationForFolio, setSelectedReservationForFolio] = useState<Reservation | null>(null);
   const [isNewReservationModalOpen, setIsNewReservationModalOpen] = useState(false);
@@ -184,7 +247,27 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [reservationForCharge, setReservationForCharge] = useState<Reservation | null>(null);
   const [quickCheckInRoom, setQuickCheckInRoom] = useState<Room | null>(null);
 
-  // Sync to LocalStorage on changes
+  // Room Form Modal (Add / Edit)
+  const [isRoomFormModalOpen, setIsRoomFormModalOpen] = useState(false);
+  const [roomToEdit, setRoomToEdit] = useState<Room | null>(null);
+
+  // Reservation Edit Modal (Admin)
+  const [reservationToEdit, setReservationToEdit] = useState<Reservation | null>(null);
+  const [isReservationEditModalOpen, setIsReservationEditModalOpen] = useState(false);
+
+  // Sync to localStorage
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.AUTH);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
@@ -233,7 +316,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [guests]);
 
-  // Keep selected room up-to-date if rooms update
+  // Update selected details if objects update
   useEffect(() => {
     if (selectedRoomForDetail) {
       const updated = rooms.find((r) => r.id === selectedRoomForDetail.id);
@@ -241,7 +324,6 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [rooms]);
 
-  // Keep selected reservation up-to-date
   useEffect(() => {
     if (selectedReservationForFolio) {
       const updated = reservations.find((r) => r.id === selectedReservationForFolio.id);
@@ -249,7 +331,153 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [reservations]);
 
-  // Check-In Guest Action
+  // Auth Handlers
+  const login = (email: string, pass: string): boolean => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail === PRESET_USERS.admin.email.toLowerCase() && (pass === PRESET_USERS.admin.pass || pass === 'admin')) {
+      setCurrentUser(PRESET_USERS.admin);
+      return true;
+    }
+    if (cleanEmail === PRESET_USERS.manager.email.toLowerCase() && (pass === PRESET_USERS.manager.pass || pass === 'manager')) {
+      setCurrentUser(PRESET_USERS.manager);
+      return true;
+    }
+    // Generic manager fallback for any credentials entered
+    setCurrentUser({
+      id: `user-${Date.now()}`,
+      name: email.split('@')[0],
+      email,
+      role: 'manager',
+      designation: 'Duty Manager',
+      avatarInitials: email.slice(0, 2).toUpperCase(),
+    });
+    return true;
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+  };
+
+  const switchRole = (role: UserRole) => {
+    if (role === 'admin') {
+      setCurrentUser(PRESET_USERS.admin);
+    } else {
+      setCurrentUser(PRESET_USERS.manager);
+    }
+  };
+
+  const isAdmin = currentUser?.role === 'admin';
+  const isManager = currentUser?.role === 'manager' || isAdmin;
+
+  // ADMIN ACTION: Add Room
+  const addRoom = (roomData: Omit<Room, 'id'>) => {
+    if (!isAdmin) {
+      alert('Access Denied: Only Administrator can add new rooms to inventory.');
+      return;
+    }
+    const newRoom: Room = {
+      ...roomData,
+      id: `room-${Date.now()}`,
+    };
+    setRooms((prev) => [...prev, newRoom]);
+  };
+
+  // ADMIN / MANAGER ACTION: Edit Room
+  const editRoom = (roomId: string, updates: Partial<Room>) => {
+    setRooms((prev) => prev.map((r) => (r.id === roomId ? { ...r, ...updates } : r)));
+  };
+
+  // ADMIN ACTION: Delete Room
+  const deleteRoom = (roomId: string) => {
+    if (!isAdmin) {
+      alert('Access Denied: Only Administrator has permission to delete room inventory.');
+      return;
+    }
+    const room = rooms.find((r) => r.id === roomId);
+    if (room?.status === 'occupied') {
+      alert(`Cannot delete Room #${room.number} because it is currently occupied by an active guest.`);
+      return;
+    }
+    setRooms((prev) => prev.filter((r) => r.id !== roomId));
+    if (selectedRoomForDetail?.id === roomId) {
+      setSelectedRoomForDetail(null);
+    }
+  };
+
+  // ADMIN ACTION: Delete Staff Member
+  const deleteStaffMember = (staffId: string) => {
+    if (!isAdmin) {
+      alert('Access Denied: Only Administrator can terminate or remove staff profiles.');
+      return;
+    }
+    setStaff((prev) => prev.filter((s) => s.id !== staffId));
+  };
+
+  // ADMIN ACTION: Delete Reservation
+  const deleteReservation = (reservationId: string) => {
+    if (!isAdmin) {
+      alert('Access Denied: Only Administrator can permanently purge booking records.');
+      return;
+    }
+    const res = reservations.find((r) => r.id === reservationId);
+    if (res) {
+      // Free room if occupied
+      setRooms((prev) =>
+        prev.map((r) => {
+          if (r.id === res.roomId && r.currentReservationId === res.id) {
+            return {
+              ...r,
+              status: 'available',
+              currentGuestId: undefined,
+              currentGuestName: undefined,
+              currentReservationId: undefined,
+            };
+          }
+          return r;
+        })
+      );
+    }
+    setReservations((prev) => prev.filter((r) => r.id !== reservationId));
+    if (selectedReservationForFolio?.id === reservationId) {
+      setSelectedReservationForFolio(null);
+    }
+  };
+
+  // ADMIN ACTION: Edit Reservation Details (dates, guest, rates)
+  const updateReservationDetails = (reservationId: string, updates: Partial<Reservation>) => {
+    if (!isAdmin && !isManager) return;
+    setReservations((prev) =>
+      prev.map((r) => {
+        if (r.id !== reservationId) return r;
+        const updated = { ...r, ...updates };
+
+        // Recalculate totals if nights, rate, or meal plan changed
+        if (updates.nightlyRate !== undefined || updates.nightsCount !== undefined || updates.mealPlan !== undefined) {
+          const roomTotal = (updates.nightlyRate ?? r.nightlyRate) * (updates.nightsCount ?? r.nightsCount);
+          let mealPlanDailyRate = 0;
+          const plan = updates.mealPlan ?? r.mealPlan;
+          if (plan === 'Desi & Continental Breakfast') mealPlanDailyRate = 2500 * r.adults;
+          if (plan === 'Half Board (Breakfast & Dinner Buffet)') mealPlanDailyRate = 6500 * r.adults;
+          if (plan === 'Full Board (All Meals & Balti High Tea)') mealPlanDailyRate = 12000 * r.adults;
+
+          const mealPlanTotal = mealPlanDailyRate * (updates.nightsCount ?? r.nightsCount);
+          const subtotal = roomTotal + mealPlanTotal + r.extrasTotal;
+          const taxAmount = Math.round(subtotal * HOTEL_INFO.taxRate);
+          const totalAmount = subtotal + taxAmount;
+
+          updated.roomTotal = roomTotal;
+          updated.mealPlanTotal = mealPlanTotal;
+          updated.taxAmount = taxAmount;
+          updated.totalAmount = totalAmount;
+          updated.paymentStatus = (updated.paidAmount >= totalAmount) ? 'paid' : (updated.paidAmount > 0 ? 'partial' : 'pending');
+        }
+
+        return updated;
+      })
+    );
+  };
+
+  // Standard PMS: Check-in
   const checkInReservation = (reservationId: string) => {
     const res = reservations.find((r) => r.id === reservationId);
     if (!res) return;
@@ -298,12 +526,12 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           name: res.guestName,
           email: res.guestEmail,
           phone: res.guestPhone,
-          passportNumber: res.guestPassport,
-          nationality: res.nationality,
+          cnicOrPassport: res.guestCnicOrPassport,
+          cityOrCountry: res.cityOrCountry,
           vipStatus: 'Standard',
           totalStays: 1,
           totalSpend: res.totalAmount,
-          preferences: res.specialRequests || 'None specified',
+          preferences: res.specialRequests || 'Standard guest requirements',
           lastStayDate: currentDate,
         };
         return [...prev, newGuest];
@@ -311,7 +539,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  // Check-Out Guest Action
+  // Standard PMS: Check-out
   const checkOutReservation = (reservationId: string, paymentMethod?: string) => {
     const res = reservations.find((r) => r.id === reservationId);
     if (!res) return;
@@ -344,7 +572,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               currentGuestId: undefined,
               currentGuestName: undefined,
               currentReservationId: undefined,
-              notes: `Prior guest checked out at ${nowStr}`,
+              notes: `Prior guest departed at ${nowStr}`,
             }
           : r
       )
@@ -358,7 +586,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       taskType: 'Full Turnover',
       priority: 'high',
       status: 'pending',
-      notes: `Departure turnover for ${res.guestName}. Disinfect, sanitize, change bed linens, restock mini-bar.`,
+      notes: `Departure turnover for ${res.guestName}. Restock pine wood logs, thermal blankets & mini-bar dry fruits.`,
       scheduledTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -374,7 +602,6 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       prev.map((item) => (item.id === reservationId ? { ...item, status: 'cancelled' } : item))
     );
 
-    // If room was reserved or assigned, release it if unoccupied
     setRooms((prev) =>
       prev.map((r) => {
         if (r.id === res.roomId && r.currentReservationId === res.id) {
@@ -391,7 +618,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  // Create new reservation
+  // Create new reservation (PKR calculated)
   const createReservation = (data: NewReservationInput): Reservation => {
     const room = rooms.find((r) => r.id === data.roomId);
     if (!room) throw new Error('Room not found');
@@ -401,18 +628,18 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const timeDiff = Math.max(1, checkOut.getTime() - checkIn.getTime());
     const nightsCount = Math.max(1, Math.ceil(timeDiff / (1000 * 3600 * 24)));
 
-    // Meal plan calculation per night
+    // Meal plan calculation per night in PKR
     let mealRatePerNight = 0;
-    if (data.mealPlan === 'Bed & Breakfast') mealRatePerNight = 30 * data.adults;
-    if (data.mealPlan === 'Half Board') mealRatePerNight = 70 * data.adults;
-    if (data.mealPlan === 'All Inclusive') mealRatePerNight = 140 * data.adults;
+    if (data.mealPlan === 'Desi & Continental Breakfast') mealRatePerNight = 2500 * data.adults;
+    if (data.mealPlan === 'Half Board (Breakfast & Dinner Buffet)') mealRatePerNight = 6500 * data.adults;
+    if (data.mealPlan === 'Full Board (All Meals & Balti High Tea)') mealRatePerNight = 12000 * data.adults;
 
     const roomTotal = room.ratePerNight * nightsCount;
     const mealPlanTotal = mealRatePerNight * nightsCount;
     const extrasTotal = 0;
     const subtotal = roomTotal + mealPlanTotal + extrasTotal;
-    const taxAmount = subtotal * HOTEL_INFO.taxRate;
-    const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
+    const taxAmount = Math.round(subtotal * HOTEL_INFO.taxRate);
+    const totalAmount = subtotal + taxAmount;
 
     const initialPaid = Math.min(data.initialPayment, totalAmount);
     let paymentStatus: 'paid' | 'partial' | 'pending' = 'pending';
@@ -421,12 +648,12 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const newRes: Reservation = {
       id: `res-${Date.now()}`,
-      bookingRef: `AS-${Math.floor(1000 + Math.random() * 9000)}`,
+      bookingRef: `MK-${Math.floor(7000 + Math.random() * 2000)}`,
       guestName: data.guestName,
       guestEmail: data.guestEmail,
       guestPhone: data.guestPhone,
-      guestPassport: data.guestPassport,
-      nationality: data.nationality,
+      guestCnicOrPassport: data.guestCnicOrPassport,
+      cityOrCountry: data.cityOrCountry,
       roomId: room.id,
       roomNumber: room.number,
       roomType: room.type,
@@ -453,16 +680,13 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setReservations((prev) => [newRes, ...prev]);
 
-    // If starting today and room is available, mark as reserved
     if (data.checkInDate === currentDate && room.status === 'available') {
       setRooms((prev) =>
-        prev.map((r) =>
-          r.id === room.id ? { ...r, status: 'reserved' } : r
-        )
+        prev.map((r) => (r.id === room.id ? { ...r, status: 'reserved' } : r))
       );
     }
 
-    // Update Guest CRM
+    // Guest CRM Update
     setGuests((prev) => {
       const existing = prev.find((g) => g.email.toLowerCase() === data.guestEmail.toLowerCase());
       if (existing) {
@@ -482,8 +706,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           name: data.guestName,
           email: data.guestEmail,
           phone: data.guestPhone,
-          passportNumber: data.guestPassport,
-          nationality: data.nationality,
+          cnicOrPassport: data.guestCnicOrPassport,
+          cityOrCountry: data.cityOrCountry,
           vipStatus: 'Standard',
           totalStays: 1,
           totalSpend: totalAmount,
@@ -497,7 +721,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return newRes;
   };
 
-  // Add Extra Charge to a guest reservation folio
+  // Add extra charge (Room service, Trout BBQ, 4x4 tour, etc.)
   const addExtraCharge = (reservationId: string, chargeData: Omit<ExtraCharge, 'id' | 'date'>) => {
     const charge: ExtraCharge = {
       id: `ext-${Date.now()}`,
@@ -505,7 +729,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       category: chargeData.category,
       amount: chargeData.amount,
       date: currentDate,
-      addedBy: chargeData.addedBy || 'Front Desk Staff',
+      addedBy: chargeData.addedBy || `${currentUser?.name || 'Front Desk'} (${currentUser?.role || 'Staff'})`,
     };
 
     setReservations((prev) =>
@@ -515,8 +739,8 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const newExtras = [...res.extras, charge];
         const newExtrasTotal = newExtras.reduce((sum, item) => sum + item.amount, 0);
         const subtotal = res.roomTotal + res.mealPlanTotal + newExtrasTotal;
-        const newTaxAmount = Math.round(subtotal * HOTEL_INFO.taxRate * 100) / 100;
-        const newTotalAmount = Math.round((subtotal + newTaxAmount) * 100) / 100;
+        const newTaxAmount = Math.round(subtotal * HOTEL_INFO.taxRate);
+        const newTotalAmount = subtotal + newTaxAmount;
 
         let newPaymentStatus = res.paymentStatus;
         if (res.paidAmount < newTotalAmount) {
@@ -540,7 +764,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setRooms((prev) => prev.map((r) => (r.id === roomId ? { ...r, ...updates } : r)));
   };
 
-  // Update Housekeeping status on Room
+  // Housekeeping status update
   const updateHousekeepingStatus = (roomId: string, status: HousekeepingStatus) => {
     setRooms((prev) =>
       prev.map((r) => {
@@ -548,13 +772,11 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return {
           ...r,
           housekeeping: status,
-          // If clean/inspected and was maintenance-free, ensure room is ready
           status: status === 'clean' || status === 'inspected' ? (r.status === 'occupied' ? 'occupied' : 'available') : r.status
         };
       })
     );
 
-    // If marked as clean or inspected, auto-complete active tasks for this room
     if (status === 'clean' || status === 'inspected') {
       setHousekeepingTasks((prev) =>
         prev.map((t) =>
@@ -566,7 +788,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Create Housekeeping Task
+  // Housekeeping task creation
   const createHousekeepingTask = (task: Omit<HousekeepingTask, 'id'>) => {
     const newTask: HousekeepingTask = {
       ...task,
@@ -574,7 +796,6 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setHousekeepingTasks((prev) => [newTask, ...prev]);
 
-    // Update room status to match
     if (task.status === 'in_progress') {
       updateRoom(task.roomId, { housekeeping: 'cleaning_in_progress' });
     }
@@ -588,7 +809,6 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const updated = { ...t, ...updates };
         if (updates.status === 'completed' && !updated.completedAt) {
           updated.completedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          // Also set room to inspected/clean
           updateRoom(t.roomId, { housekeeping: 'inspected' });
         } else if (updates.status === 'in_progress') {
           updateRoom(t.roomId, { housekeeping: 'cleaning_in_progress' });
@@ -598,7 +818,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  // Create Maintenance Request
+  // Maintenance creation
   const createMaintenanceRequest = (req: Omit<MaintenanceRequest, 'id' | 'reportedAt'>) => {
     const newReq: MaintenanceRequest = {
       ...req,
@@ -607,13 +827,12 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setMaintenanceRequests((prev) => [newReq, ...prev]);
 
-    // If urgent, place room out of order
     if (req.priority === 'urgent' || req.priority === 'high') {
       updateRoom(req.roomId, { status: 'maintenance', notes: `Maintenance: ${req.issueTitle}` });
     }
   };
 
-  // Resolve Maintenance Request
+  // Maintenance resolution
   const resolveMaintenanceRequest = (reqId: string, notes?: string) => {
     setMaintenanceRequests((prev) =>
       prev.map((m) => {
@@ -627,15 +846,18 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
     );
 
-    // Restore room if it had maintenance
     const target = maintenanceRequests.find((m) => m.id === reqId);
     if (target) {
       updateRoom(target.roomId, { status: 'available', notes: undefined });
     }
   };
 
-  // Add Staff Member
+  // Staff onboarding
   const addStaffMember = (member: Omit<StaffMember, 'id'>) => {
+    if (!isAdmin) {
+      alert('Access Denied: Only Administrator can recruit and onboard new staff members.');
+      return;
+    }
     const initials = member.name
       .split(' ')
       .map((n) => n[0])
@@ -651,12 +873,10 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStaff((prev) => [...prev, newStaff]);
   };
 
-  // Update Staff Member
   const updateStaffMember = (staffId: string, updates: Partial<StaffMember>) => {
     setStaff((prev) => prev.map((s) => (s.id === staffId ? { ...s, ...updates } : s)));
   };
 
-  // Toggle Staff Duty Status
   const toggleStaffDuty = (staffId: string) => {
     setStaff((prev) =>
       prev.map((s) => {
@@ -672,7 +892,6 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  // Add or update guest CRM
   const addOrUpdateGuest = (guestData: Omit<GuestProfile, 'id'>): GuestProfile => {
     const existing = guests.find((g) => g.email.toLowerCase() === guestData.email.toLowerCase());
     if (existing) {
@@ -689,8 +908,12 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Reset to Demo Data
+  // Reset to Demo Data (Admin Only)
   const resetToDemoData = () => {
+    if (!isAdmin) {
+      alert('Access Denied: Only Administrator can perform system-wide database resets.');
+      return;
+    }
     setRooms(INITIAL_ROOMS);
     setReservations(INITIAL_RESERVATIONS);
     setStaff(INITIAL_STAFF);
@@ -705,7 +928,7 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem(STORAGE_KEYS.GUESTS);
   };
 
-  // Computed metrics
+  // Computed metrics (PKR)
   const totalRooms = rooms.length;
   const occupiedRooms = rooms.filter((r) => r.status === 'occupied').length;
   const availableRooms = rooms.filter((r) => r.status === 'available').length;
@@ -745,6 +968,13 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         guests,
         currentDate,
 
+        currentUser,
+        login,
+        logout,
+        switchRole,
+        isAdmin,
+        isManager,
+
         selectedRoomForDetail,
         setSelectedRoomForDetail,
         selectedReservationForFolio,
@@ -761,6 +991,22 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setReservationForCharge,
         quickCheckInRoom,
         setQuickCheckInRoom,
+
+        isRoomFormModalOpen,
+        setIsRoomFormModalOpen,
+        roomToEdit,
+        setRoomToEdit,
+        addRoom,
+        editRoom,
+        deleteRoom,
+
+        reservationToEdit,
+        setReservationToEdit,
+        isReservationEditModalOpen,
+        setIsReservationEditModalOpen,
+        updateReservationDetails,
+        deleteReservation,
+        deleteStaffMember,
 
         checkInReservation,
         checkOutReservation,

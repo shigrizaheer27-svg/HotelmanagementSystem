@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { formatPKR } from '../../data/mockData';
 import { Reservation, ReservationStatus } from '../../types/hotel';
 import {
   Search,
-  Filter,
   Plus,
   Receipt,
   Key,
@@ -12,7 +12,9 @@ import {
   PlusCircle,
   CheckCircle2,
   Calendar,
-  DollarSign
+  Edit2,
+  Trash2,
+  Shield
 } from 'lucide-react';
 
 export const ReservationsView: React.FC = () => {
@@ -26,80 +28,56 @@ export const ReservationsView: React.FC = () => {
     setIsNewReservationModalOpen,
     setIsAddChargeModalOpen,
     setReservationForCharge,
+    isAdmin,
+    isManager,
+    setReservationToEdit,
+    setIsReservationEditModalOpen,
+    deleteReservation,
   } = useHotel();
 
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredReservations = reservations.filter((res) => {
-    // Status tab filter
     if (activeTab === 'checked_in' && res.status !== 'checked_in') return false;
     if (activeTab === 'confirmed' && res.status !== 'confirmed') return false;
     if (activeTab === 'checked_out' && res.status !== 'checked_out') return false;
     if (activeTab === 'cancelled' && res.status !== 'cancelled') return false;
 
-    // Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = res.guestName.toLowerCase().includes(q);
-      const matchRoom = res.roomNumber.includes(q);
-      const matchRef = res.bookingRef.toLowerCase().includes(q);
-      const matchEmail = res.guestEmail.toLowerCase().includes(q);
-      return matchName || matchRoom || matchRef || matchEmail;
+      return (
+        res.guestName.toLowerCase().includes(q) ||
+        res.roomNumber.includes(q) ||
+        res.bookingRef.toLowerCase().includes(q) ||
+        res.guestEmail.toLowerCase().includes(q) ||
+        res.guestCnicOrPassport.toLowerCase().includes(q)
+      );
     }
-
     return true;
   });
 
   const getStatusBadge = (status: ReservationStatus) => {
     switch (status) {
       case 'checked_in':
-        return (
-          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-            In-House
-          </span>
-        );
+        return <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">In-House</span>;
       case 'confirmed':
-        return (
-          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-            Confirmed
-          </span>
-        );
+        return <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Confirmed</span>;
       case 'checked_out':
-        return (
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Departed
-          </span>
-        );
+        return <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Departed</span>;
       case 'cancelled':
-        return (
-          <span className="text-xs font-semibold text-red-600 dark:text-red-400">
-            Cancelled
-          </span>
-        );
+        return <span className="text-xs font-semibold text-red-600 dark:text-red-400">Cancelled</span>;
     }
   };
 
   const getPaymentBadge = (status: 'paid' | 'partial' | 'pending') => {
     switch (status) {
       case 'paid':
-        return (
-          <span className="text-[11px] font-mono font-medium text-emerald-700 dark:text-emerald-400">
-            Settled
-          </span>
-        );
+        return <span className="text-[11px] font-mono font-medium text-emerald-700 dark:text-emerald-400">Settled</span>;
       case 'partial':
-        return (
-          <span className="text-[11px] font-mono font-medium text-amber-700 dark:text-amber-400">
-            Partial
-          </span>
-        );
+        return <span className="text-[11px] font-mono font-medium text-amber-700 dark:text-amber-400">Partial</span>;
       case 'pending':
-        return (
-          <span className="text-[11px] font-mono font-medium text-red-600 dark:text-red-400">
-            Unpaid
-          </span>
-        );
+        return <span className="text-[11px] font-mono font-medium text-red-600 dark:text-red-400">Unpaid</span>;
     }
   };
 
@@ -109,14 +87,14 @@ export const ReservationsView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">
-            Guest Reservations & Bookings Hub
+            Guest Reservations & Bookings Hub (PKR)
           </h2>
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             <span>{reservations.length} Total Bookings</span>
             <span aria-hidden="true">·</span>
-            <span>Check-in / Check-out workflows</span>
+            <span>Check-in & Keycard workflows</span>
             <span aria-hidden="true">·</span>
-            <span>Itemized Folios</span>
+            <span>{isAdmin ? 'Admin Edit & Purge Available' : 'Managerial Access'}</span>
           </div>
         </div>
 
@@ -131,7 +109,6 @@ export const ReservationsView: React.FC = () => {
 
       {/* Filter Tabs & Search Bar */}
       <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Status Segmented Control */}
         <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
           {[
             { id: 'all', label: 'All Bookings', count: reservations.length },
@@ -163,15 +140,14 @@ export const ReservationsView: React.FC = () => {
           ))}
         </div>
 
-        {/* Live Search Input */}
         <div className="relative min-w-[260px]">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search guest, room #, ref, email..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-amber-500"
+            placeholder="Search by name, CNIC, room #, ref..."
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
           />
         </div>
       </div>
@@ -183,22 +159,21 @@ export const ReservationsView: React.FC = () => {
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
                 <th className="p-3.5 font-semibold">Booking Ref</th>
-                <th className="p-3.5 font-semibold">Guest</th>
-                <th className="p-3.5 font-semibold">Room</th>
+                <th className="p-3.5 font-semibold">Guest & CNIC</th>
+                <th className="p-3.5 font-semibold">Suite</th>
                 <th className="p-3.5 font-semibold">Stay Dates</th>
                 <th className="p-3.5 font-semibold text-center">Nights</th>
-                <th className="p-3.5 font-semibold">Meal Plan</th>
-                <th className="p-3.5 font-semibold text-right">Total Amount</th>
-                <th className="p-3.5 font-semibold text-center">Payment</th>
-                <th className="p-3.5 font-semibold">Status</th>
+                <th className="p-3.5 font-semibold">Payment Method</th>
+                <th className="p-3.5 font-semibold text-right">Total (PKR)</th>
+                <th className="p-3.5 font-semibold text-center">Status</th>
                 <th className="p-3.5 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredReservations.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-slate-500 dark:text-slate-400">
-                    No reservations matching current filter.
+                  <td colSpan={9} className="p-8 text-center text-slate-500 dark:text-slate-400">
+                    No bookings found matching current filter.
                   </td>
                 </tr>
               ) : (
@@ -216,23 +191,23 @@ export const ReservationsView: React.FC = () => {
                         <div className="font-semibold text-slate-900 dark:text-white">
                           {res.guestName}
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[150px]">
-                          {res.guestEmail}
+                        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                          {res.guestCnicOrPassport} · {res.cityOrCountry}
                         </div>
                       </td>
 
                       <td className="p-3.5">
-                        <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900 dark:text-white">
-                          <span>#{res.roomNumber}</span>
+                        <div className="font-mono font-bold text-slate-900 dark:text-white">
+                          #{res.roomNumber}
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[120px]">
+                        <div className="text-[11px] text-slate-500 truncate max-w-[120px]">
                           {res.roomType}
                         </div>
                       </td>
 
                       <td className="p-3.5 font-mono text-[11px] text-slate-600 dark:text-slate-300 whitespace-nowrap">
                         <div>{res.checkInDate}</div>
-                        <div className="text-slate-400 dark:text-slate-500">to {res.checkOutDate}</div>
+                        <div className="text-slate-400">to {res.checkOutDate}</div>
                       </td>
 
                       <td className="p-3.5 text-center font-mono tabular-nums text-slate-700 dark:text-slate-300">
@@ -240,47 +215,44 @@ export const ReservationsView: React.FC = () => {
                       </td>
 
                       <td className="p-3.5 text-[11px] text-slate-600 dark:text-slate-300">
-                        {res.mealPlan}
+                        <div>{res.paymentMethod}</div>
+                        <div>{getPaymentBadge(res.paymentStatus)}</div>
                       </td>
 
                       <td className="p-3.5 text-right font-mono font-bold text-slate-900 dark:text-white tabular-nums">
-                        ${res.totalAmount.toFixed(2)}
+                        {formatPKR(res.totalAmount)}
                       </td>
 
                       <td className="p-3.5 text-center">
-                        {getPaymentBadge(res.paymentStatus)}
-                      </td>
-
-                      <td className="p-3.5">
                         {getStatusBadge(res.status)}
                       </td>
 
                       <td className="p-3.5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Guest Folio invoice button */}
+                          {/* Folio button */}
                           <button
                             onClick={() => setSelectedReservationForFolio(res)}
-                            title="Print / View Folio"
+                            title="View / Print PKR Folio"
                             className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                           >
                             <Receipt className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Add extra charge if active in-house */}
+                          {/* Add extra charge if active */}
                           {res.status === 'checked_in' && (
                             <button
                               onClick={() => {
                                 setReservationForCharge(res);
                                 setIsAddChargeModalOpen(true);
                               }}
-                              title="Post room service or amenity charge"
+                              title="Add F&B or Tour Charge"
                               className="p-1.5 text-amber-600 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors"
                             >
                               <PlusCircle className="w-3.5 h-3.5" />
                             </button>
                           )}
 
-                          {/* Check in button */}
+                          {/* Check in */}
                           {res.status === 'confirmed' && (
                             <button
                               onClick={() => checkInReservation(res.id)}
@@ -291,11 +263,11 @@ export const ReservationsView: React.FC = () => {
                             </button>
                           )}
 
-                          {/* Check out button */}
+                          {/* Check out */}
                           {res.status === 'checked_in' && (
                             <button
                               onClick={() => {
-                                if (confirm(`Check out ${res.guestName} from Room ${res.roomNumber}? Total balance: $${(res.totalAmount - res.paidAmount).toFixed(2)}`)) {
+                                if (confirm(`Check out ${res.guestName} from Room ${res.roomNumber}?`)) {
                                   checkOutReservation(res.id);
                                 }
                               }}
@@ -306,11 +278,40 @@ export const ReservationsView: React.FC = () => {
                             </button>
                           )}
 
-                          {/* Cancel button if confirmed */}
-                          {res.status === 'confirmed' && (
+                          {/* ADMIN: Edit Reservation */}
+                          {isAdmin && (
                             <button
                               onClick={() => {
-                                if (confirm(`Cancel reservation ${res.bookingRef} for ${res.guestName}?`)) {
+                                setReservationToEdit(res);
+                                setIsReservationEditModalOpen(true);
+                              }}
+                              title="Edit Booking Rates / Dates (Admin)"
+                              className="p-1.5 text-amber-600 hover:text-amber-800 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {/* ADMIN: Delete Reservation */}
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Administrator: Permanently purge booking ${res.bookingRef} for ${res.guestName}?`)) {
+                                  deleteReservation(res.id);
+                                }
+                              }}
+                              title="Delete Booking (Admin Only)"
+                              className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {/* Manager / User Cancel Booking */}
+                          {!isAdmin && res.status === 'confirmed' && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Cancel reservation ${res.bookingRef}?`)) {
                                   cancelReservation(res.id);
                                 }
                               }}
