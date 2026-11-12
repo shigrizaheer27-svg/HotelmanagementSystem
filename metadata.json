@@ -1,0 +1,6 @@
+{
+  "name": "AuraStay - Hotel & Property Management System",
+  "description": "Comprehensive hotel management system with real-time room reservations, front desk operations, interactive room grid, housekeeping tracking, staff management, and guest billing folios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
