@@ -1,20 +1,48 @@
-export type UserRole = 'admin' | 'manager';
+export type UserRole = 'master_admin' | 'admin' | 'manager';
 
 export interface AuthUser {
   id: string;
   name: string;
+  username: string;
   email: string;
   role: UserRole;
   designation: string;
   avatarInitials: string;
+  assignedPropertyId?: string | 'all';
 }
 
-export type RoomType = 
-  | 'Heritage Deluxe' 
-  | 'Karakoram View' 
-  | 'Executive Shigar Suite' 
-  | 'Royal Shigar Suite' 
-  | 'Riverside Chalet';
+export interface SystemUser extends AuthUser {
+  password: string;
+  phone?: string;
+  createdAt: string;
+  isActive: boolean;
+}
+
+export interface HotelInfo {
+  name: string;
+  tagline: string;
+  shortLocation: string;
+  address: string;
+  phone: string;
+  mobile: string;
+  email: string;
+  website: string;
+  currency: string;
+  currencySymbol: string;
+  ntn: string;
+  registrationNo: string;
+  taxLabel: string;
+  taxRate: number; // e.g., 0.13 for 13%
+}
+
+export interface RoomCategory {
+  id: string;
+  name: string;
+  defaultRate: number;
+  description?: string;
+}
+
+export type RoomType = string;
 
 export type RoomStatus = 'available' | 'occupied' | 'reserved' | 'maintenance';
 
@@ -23,11 +51,12 @@ export type HousekeepingStatus = 'clean' | 'dirty' | 'cleaning_in_progress' | 'i
 export interface Room {
   id: string;
   number: string; // e.g. "101", "204"
+  name: string; // e.g. "Apricot Blossom Deluxe"
   floor: number;
-  type: RoomType;
+  type: RoomType; // Category name
   status: RoomStatus;
   housekeeping: HousekeepingStatus;
-  ratePerNight: number; // in PKR
+  ratePerNight: number;
   bedType: 'King' | 'Queen' | 'Twin Doubles' | 'Royal Master King';
   maxCapacity: number;
   amenities: string[];
@@ -39,60 +68,67 @@ export interface Room {
 
 export type ReservationStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
 
-export type MealPlan = 
-  | 'Room Only' 
-  | 'Desi & Continental Breakfast' 
-  | 'Half Board (Breakfast & Dinner Buffet)' 
+export type MealPlan =
+  | 'Room Only'
+  | 'Desi & Continental Breakfast'
+  | 'Half Board (Breakfast & Dinner Buffet)'
   | 'Full Board (All Meals & Balti High Tea)';
 
 export interface ExtraCharge {
   id: string;
   description: string;
-  category: 
-    | 'Balti & Desi Dining' 
-    | 'Bonfire & Trout BBQ' 
-    | 'Minibar & Dry Fruits' 
-    | 'Skardu Airport Transfer' 
-    | 'Jeep Safari / Tour' 
-    | 'Laundry & Heating' 
+  category:
+    | 'Balti & Desi Dining'
+    | 'Bonfire & Trout BBQ'
+    | 'Minibar & Dry Fruits'
+    | 'Skardu Airport Transfer'
+    | 'Jeep Safari / Tour'
+    | 'Laundry & Heating'
     | 'Other';
-  amount: number; // in PKR
+  amount: number;
   date: string;
   addedBy: string;
 }
 
-export type PakistaniPaymentMethod = 
-  | 'Raast / Bank Transfer' 
-  | 'EasyPaisa / JazzCash' 
-  | 'Credit / Debit Card' 
-  | 'Cash at Front Desk' 
+export type PakistaniPaymentMethod =
+  | 'Raast / Bank Transfer'
+  | 'EasyPaisa / JazzCash'
+  | 'Credit / Debit Card'
+  | 'Cash at Front Desk'
   | 'Corporate Account';
+
+export type DiscountType = 'flat' | 'percent';
 
 export interface Reservation {
   id: string;
-  bookingRef: string; // e.g. "MK-8492"
+  bookingRef: string;
   guestName: string;
   guestEmail: string;
   guestPhone: string;
-  guestCnicOrPassport: string; // CNIC or Passport
-  cityOrCountry: string; // e.g. "Islamabad, Pakistan", "Lahore", "UK"
+  guestCnicOrPassport: string;
+  cityOrCountry: string;
   roomId: string;
   roomNumber: string;
+  roomName?: string;
   roomType: RoomType;
-  checkInDate: string; // "YYYY-MM-DD"
-  checkOutDate: string; // "YYYY-MM-DD"
+  checkInDate: string;
+  checkOutDate: string;
   adults: number;
   children: number;
   mealPlan: MealPlan;
   extras: ExtraCharge[];
-  nightlyRate: number; // in PKR
+  nightlyRate: number;
   nightsCount: number;
-  roomTotal: number; // in PKR
-  mealPlanTotal: number; // in PKR
-  extrasTotal: number; // in PKR
-  taxAmount: number; // in PKR
-  totalAmount: number; // in PKR
-  paidAmount: number; // in PKR
+  roomTotal: number;
+  mealPlanTotal: number;
+  extrasTotal: number;
+  discountType?: DiscountType;
+  discountValue?: number;
+  discountAmount?: number;
+  discountReason?: string;
+  taxAmount: number;
+  totalAmount: number;
+  paidAmount: number;
   paymentStatus: 'paid' | 'partial' | 'pending';
   paymentMethod: PakistaniPaymentMethod;
   status: ReservationStatus;
@@ -102,15 +138,15 @@ export interface Reservation {
   checkedOutAt?: string;
 }
 
-export type Department = 
-  | 'Front Office' 
-  | 'Housekeeping' 
-  | 'Kitchen & Balti Dining' 
-  | 'Engineering & Generator' 
-  | 'Tours & Security' 
+export type Department =
+  | 'Front Office'
+  | 'Housekeeping'
+  | 'Kitchen & Balti Dining'
+  | 'Engineering & Generator'
+  | 'Tours & Security'
   | 'Management';
 
-export type StaffRole = 
+export type StaffRole =
   | 'General Manager'
   | 'Front Desk Manager'
   | 'Receptionist'
@@ -158,7 +194,13 @@ export interface MaintenanceRequest {
   roomId: string;
   roomNumber: string;
   issueTitle: string;
-  category: 'Heating & Water Geyser' | 'Generator / Electrical' | 'Plumbing' | 'Room Lock' | 'Woodwork & Furniture' | 'Appliances';
+  category:
+    | 'Heating & Water Geyser'
+    | 'Generator / Electrical'
+    | 'Plumbing'
+    | 'Room Lock'
+    | 'Woodwork & Furniture'
+    | 'Appliances';
   priority: 'urgent' | 'high' | 'normal';
   status: 'reported' | 'in_progress' | 'resolved';
   reportedBy: string;
@@ -178,9 +220,23 @@ export interface GuestProfile {
   cityOrCountry: string;
   vipStatus: 'Standard' | 'Silver' | 'Gold' | 'Platinum VIP';
   totalStays: number;
-  totalSpend: number; // in PKR
+  totalSpend: number;
   preferences: string;
   dietaryRestrictions?: string;
   notes?: string;
   lastStayDate: string;
+}
+
+export interface PropertyWorkspace {
+  id: string;
+  hotelCode: string; // Unique Hotel ID created by Master Admin, e.g., "HTL-101"
+  createdAt: string;
+  hotelInfo: HotelInfo;
+  roomCategories: RoomCategory[];
+  rooms: Room[];
+  reservations: Reservation[];
+  staff: StaffMember[];
+  housekeepingTasks: HousekeepingTask[];
+  maintenanceRequests: MaintenanceRequest[];
+  guests: GuestProfile[];
 }

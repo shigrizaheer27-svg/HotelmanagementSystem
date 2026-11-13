@@ -1,6 +1,5 @@
 import React from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { formatPKR } from '../../data/mockData';
 import {
   LayoutDashboard,
   BedDouble,
@@ -11,10 +10,10 @@ import {
   UserCheck,
   Shield,
   UserCheck2,
-  Wrench,
-  ChevronRight,
   ShieldAlert,
-  ArrowUpRight
+  Settings,
+  Building2,
+  Crown,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,9 +22,31 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { stats, hotelInfo, currentUser, isAdmin, isManager } = useHotel();
+  const {
+    stats,
+    hotelInfo,
+    formatPrice,
+    isMasterAdmin,
+    isAdmin,
+    accessibleProperties,
+    activePropertyId,
+    activeProperty,
+    switchProperty,
+  } = useHotel();
 
   const navItems = [
+    ...(isMasterAdmin
+      ? [
+          {
+            id: 'master_admin',
+            label: 'Master Admin Panel',
+            subtext: `${accessibleProperties.length} Hotels · Provision IDs`,
+            icon: Crown,
+            badge: `${accessibleProperties.length} Hotels`,
+            badgeColor: 'text-purple-700 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-300 font-mono',
+          },
+        ]
+      : []),
     {
       id: 'overview',
       label: 'Live Front Desk',
@@ -37,14 +58,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     {
       id: 'rooms',
       label: 'Room Matrix & Rates',
-      subtext: `${stats.totalRooms} Rooms · 4 Floors`,
+      subtext: `${stats.totalRooms} Rooms`,
       icon: BedDouble,
       badge: `${stats.occupiedRooms}/${stats.totalRooms}`,
       badgeColor: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 font-mono',
     },
     {
       id: 'reservations',
-      label: 'Bookings & Folios',
+      label: 'Bookings & Discounts',
       subtext: 'Check-In / Out Hub',
       icon: CalendarCheck,
       badge: stats.activeInHouse.length > 0 ? `${stats.activeInHouse.length} Active` : undefined,
@@ -61,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     {
       id: 'housekeeping',
       label: 'Housekeeping & Maint.',
-      subtext: 'Cleaning & Geysers',
+      subtext: 'Turnovers & Repairs',
       icon: Sparkles,
       badge: stats.pendingTasksCount > 0 ? `${stats.pendingTasksCount} Tasks` : undefined,
       badgeColor: 'text-purple-700 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-300',
@@ -69,16 +90,54 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     {
       id: 'guests',
       label: 'Guest Directory (CRM)',
-      subtext: 'CNIC & VIP Profiles',
+      subtext: 'ID & VIP Profiles',
       icon: UserCheck,
     },
     {
       id: 'billing',
-      label: 'PKR Finance & Ledgers',
-      subtext: 'Revenue & Invoicing',
+      label: `${hotelInfo.currency} Finance & Ledgers`,
+      subtext: 'Invoices & Discounts',
       icon: Receipt,
     },
+    {
+      id: 'settings',
+      label: isMasterAdmin
+        ? 'Platform & Hotel Config'
+        : isAdmin
+        ? 'Hotel Admin & Managers'
+        : 'Property Settings',
+      subtext: isMasterAdmin
+        ? 'Hotels, Admins & Categories'
+        : isAdmin
+        ? `${activeProperty.hotelCode} · Managers & Tax`
+        : 'Property & Tax Info',
+      icon: Settings,
+    },
   ];
+
+  const roleHeader = isMasterAdmin
+    ? {
+        title: 'Master Admin',
+        scope: 'ALL HOTELS',
+        desc: 'Create Hotel IDs, issue Hotel Admin credentials & audit properties.',
+        icon: <Crown className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
+        tagColor: 'text-purple-600 dark:text-purple-400',
+      }
+    : isAdmin
+    ? {
+        title: 'Hotel Admin',
+        scope: activeProperty.hotelCode,
+        desc: `Full control of ${hotelInfo.name} & its managers only.`,
+        icon: <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
+        tagColor: 'text-amber-600 dark:text-amber-400',
+      }
+    : {
+        title: 'Manager Access',
+        scope: activeProperty.hotelCode,
+        desc: `Operations for ${hotelInfo.name}: bookings, discounts & tasks.`,
+        icon: <UserCheck2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        tagColor: 'text-blue-600 dark:text-blue-400',
+      };
 
   return (
     <aside className="w-64 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-[calc(100vh-61px)] sticky top-[61px] select-none">
@@ -86,28 +145,42 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       <div className="p-3.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {isAdmin ? (
-              <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            ) : (
-              <UserCheck2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            )}
+            {roleHeader.icon}
             <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              {isAdmin ? 'Admin Console' : 'Manager Access'}
+              {roleHeader.title}
             </span>
           </div>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
-            isAdmin ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300'
-          }`}>
-            {isAdmin ? 'FULL ACCESS' : 'MANAGERIAL'}
+          <span className={`text-[10px] font-mono font-semibold ${roleHeader.tagColor}`}>
+            {roleHeader.scope}
           </span>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-          {isAdmin ? 'Can Add, Edit, Delete rooms, staff, bookings & data.' : 'Operational access: bookings, folios & tasks.'}
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+          {roleHeader.desc}
         </p>
       </div>
 
-      {/* Quick Occupancy Gauge Pill */}
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800/80">
+      {/* Multi-Property Quick Switcher (Master Admin Only) */}
+      {isMasterAdmin && accessibleProperties.length > 1 && (
+        <div className="px-3.5 pt-3 pb-1">
+          <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1 mb-1">
+            <Building2 className="w-3 h-3" /> Active Hotel Workspace
+          </label>
+          <select
+            value={activePropertyId}
+            onChange={(e) => switchProperty(e.target.value)}
+            className="w-full p-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+          >
+            {accessibleProperties.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.hotelCode} — {p.hotelInfo.name} ({p.hotelInfo.currency})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Quick Occupancy Gauge */}
+      <div className="p-3.5 border-b border-slate-100 dark:border-slate-800/80">
         <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
           <div className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
             <span>Occupancy Rate</span>
@@ -189,19 +262,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             <span>Urgent Maintenance</span>
           </div>
           <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
-            {stats.urgentMaintenanceCount} ticket (Geyser / Heating) requires attention.
+            {stats.urgentMaintenanceCount} ticket requires attention.
           </p>
         </div>
       )}
 
-      {/* Property & PKR Status in Footer */}
+      {/* Property Finance Footer */}
       <div className="p-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-slate-700 dark:text-slate-300">Resort Finance</span>
-          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">PKR (Rs.)</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">Property Finance</span>
+          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+            {hotelInfo.currency} ({hotelInfo.currencySymbol})
+          </span>
         </div>
         <div className="mt-1 text-slate-400 dark:text-slate-500 text-[10px]">
-          RevPAR: <span className="font-mono font-medium text-slate-600 dark:text-slate-300">{formatPKR(stats.revPAR)}</span>
+          RevPAR: <span className="font-mono font-medium text-slate-600 dark:text-slate-300 tabular-nums">{formatPrice(stats.revPAR)}</span>
         </div>
       </div>
     </aside>

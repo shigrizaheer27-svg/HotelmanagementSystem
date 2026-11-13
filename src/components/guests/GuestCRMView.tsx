@@ -1,22 +1,10 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { formatPKR } from '../../data/mockData';
 import { GuestProfile } from '../../types/hotel';
-import {
-  UserCheck,
-  Search,
-  Crown,
-  DollarSign,
-  Calendar,
-  Mail,
-  Phone,
-  Shield,
-  FileText,
-  Star
-} from 'lucide-react';
+import { Search, Crown, Mail, Phone, Star } from 'lucide-react';
 
 export const GuestCRMView: React.FC = () => {
-  const { guests, reservations, setSelectedReservationForFolio } = useHotel();
+  const { guests, reservations, setSelectedReservationForFolio, hotelInfo, formatPrice } = useHotel();
   const [searchQuery, setSearchQuery] = useState('');
   const [vipFilter, setVipFilter] = useState<string>('all');
 
@@ -49,46 +37,36 @@ export const GuestCRMView: React.FC = () => {
           </span>
         );
       case 'Silver':
-        return (
-          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-            Silver Member
-          </span>
-        );
+        return <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Silver</span>;
       default:
-        return (
-          <span className="text-xs text-slate-400">
-            Standard Guest
-          </span>
-        );
+        return <span className="text-xs text-slate-400">Standard</span>;
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Title & Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">
-            Guest CRM & Loyalty Directory (PKR)
+            Guest CRM & Loyalty Directory ({hotelInfo.currency})
           </h2>
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            <span>{guests.length} Registered Guest Profiles</span>
+            <span>{guests.length} Guest Profiles</span>
             <span aria-hidden="true">·</span>
             <span>CNIC & Passport verification</span>
             <span aria-hidden="true">·</span>
-            <span>Mashakala Resort Shigar</span>
+            <span>{hotelInfo.name}</span>
           </div>
         </div>
       </div>
 
-      {/* Search & Filters */}
       <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto">
           {['all', 'Platinum VIP', 'Gold', 'Silver', 'Standard'].map((tier) => (
             <button
               key={tier}
               onClick={() => setVipFilter(tier)}
-              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+              className={`px-3 py-1.5 text-xs rounded-md font-medium whitespace-nowrap transition-colors ${
                 vipFilter === tier
                   ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -111,93 +89,94 @@ export const GuestCRMView: React.FC = () => {
         </div>
       </div>
 
-      {/* Guest Directory Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredGuests.map((guest) => {
-          const guestReservations = reservations.filter(
-            (r) => r.guestEmail.toLowerCase() === guest.email.toLowerCase() || r.guestName.toLowerCase() === guest.name.toLowerCase()
-          );
+      {filteredGuests.length === 0 ? (
+        <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+          No guest profiles recorded for {hotelInfo.name} yet.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredGuests.map((guest) => {
+            const guestReservations = reservations.filter(
+              (r) =>
+                r.guestEmail.toLowerCase() === guest.email.toLowerCase() ||
+                r.guestName.toLowerCase() === guest.name.toLowerCase()
+            );
 
-          return (
-            <div
-              key={guest.id}
-              className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
-                      {guest.name}
-                    </h3>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {guest.cityOrCountry} · CNIC: <span className="font-mono">{guest.cnicOrPassport}</span>
+            return (
+              <div
+                key={guest.id}
+                className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                        {guest.name}
+                      </h3>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {guest.cityOrCountry} · ID: <span className="font-mono">{guest.cnicOrPassport}</span>
+                      </div>
+                    </div>
+                    {getVipBadge(guest.vipStatus)}
+                  </div>
+
+                  <div className="mt-3.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="truncate">{guest.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="font-mono">{guest.phone}</span>
                     </div>
                   </div>
-                  {getVipBadge(guest.vipStatus)}
-                </div>
 
-                <div className="mt-3.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="truncate">{guest.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="font-mono">{guest.phone}</span>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <div className="text-[11px] text-slate-400">Total Stays</div>
-                    <div className="font-mono font-bold text-slate-900 dark:text-white text-sm">
-                      {guest.totalStays} {guest.totalStays === 1 ? 'Stay' : 'Stays'}
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                      <div className="text-[11px] text-slate-400">Total Stays</div>
+                      <div className="font-mono font-bold text-slate-900 dark:text-white text-sm">
+                        {guest.totalStays} {guest.totalStays === 1 ? 'Stay' : 'Stays'}
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                      <div className="text-[11px] text-slate-400">Lifetime Spend</div>
+                      <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs truncate tabular-nums">
+                        {formatPrice(guest.totalSpend)}
+                      </div>
                     </div>
                   </div>
-                  <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <div className="text-[11px] text-slate-400">Lifetime Spend</div>
-                    <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs truncate">
-                      {formatPKR(guest.totalSpend)}
-                    </div>
-                  </div>
-                </div>
 
-                {guest.preferences && (
-                  <div className="mt-3 p-2.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-xs">
-                    <span className="font-semibold text-amber-800 dark:text-amber-300">
-                      Guest Preferences:
-                    </span>
-                    <p className="text-amber-900/90 dark:text-amber-200/90 text-[11px] mt-0.5 leading-relaxed">
-                      {guest.preferences}
-                    </p>
-                    {guest.dietaryRestrictions && (
-                      <p className="text-red-700 dark:text-red-300 text-[11px] mt-1 font-medium">
-                        Dietary: {guest.dietaryRestrictions}
+                  {guest.preferences && (
+                    <div className="mt-3 p-2.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-xs">
+                      <span className="font-semibold text-amber-800 dark:text-amber-300">
+                        Preferences:
+                      </span>
+                      <p className="text-amber-900/90 dark:text-amber-200/90 text-[11px] mt-0.5 leading-relaxed">
+                        {guest.preferences}
                       </p>
-                    )}
-                  </div>
-                )}
-              </div>
+                    </div>
+                  )}
+                </div>
 
-              {/* Bottom Stay History */}
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">
-                  Last Stay: <span className="font-mono">{guest.lastStayDate}</span>
-                </span>
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">
+                    Last Stay: <span className="font-mono">{guest.lastStayDate}</span>
+                  </span>
 
-                {guestReservations.length > 0 && (
-                  <button
-                    onClick={() => setSelectedReservationForFolio(guestReservations[0])}
-                    className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
-                  >
-                    <span>View Latest Folio</span>
-                  </button>
-                )}
+                  {guestReservations.length > 0 && (
+                    <button
+                      onClick={() => setSelectedReservationForFolio(guestReservations[0])}
+                      className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline"
+                    >
+                      View Latest Folio
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

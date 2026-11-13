@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { Reservation, MealPlan } from '../../types/hotel';
-import { X, Trash2, Calendar, DollarSign, Shield } from 'lucide-react';
+import { MealPlan, DiscountType } from '../../types/hotel';
+import { X, Trash2, Percent } from 'lucide-react';
 
 export const ReservationEditModal: React.FC = () => {
   const {
@@ -23,6 +23,9 @@ export const ReservationEditModal: React.FC = () => {
   const [nightlyRate, setNightlyRate] = useState<number>(28000);
   const [mealPlan, setMealPlan] = useState<MealPlan>('Desi & Continental Breakfast');
   const [paidAmount, setPaidAmount] = useState<number>(0);
+  const [discountType, setDiscountType] = useState<DiscountType>('flat');
+  const [discountValue, setDiscountValue] = useState<number>(0);
+  const [discountReason, setDiscountReason] = useState('');
 
   useEffect(() => {
     if (reservationToEdit) {
@@ -34,6 +37,9 @@ export const ReservationEditModal: React.FC = () => {
       setNightlyRate(reservationToEdit.nightlyRate);
       setMealPlan(reservationToEdit.mealPlan);
       setPaidAmount(reservationToEdit.paidAmount);
+      setDiscountType(reservationToEdit.discountType || 'flat');
+      setDiscountValue(reservationToEdit.discountValue || 0);
+      setDiscountReason(reservationToEdit.discountReason || '');
     }
   }, [reservationToEdit]);
 
@@ -55,6 +61,9 @@ export const ReservationEditModal: React.FC = () => {
       nightlyRate: Number(nightlyRate),
       mealPlan,
       paidAmount: Number(paidAmount),
+      discountType,
+      discountValue: Number(discountValue),
+      discountReason: discountReason.trim() || undefined,
     });
 
     setIsReservationEditModalOpen(false);
@@ -66,7 +75,7 @@ export const ReservationEditModal: React.FC = () => {
       alert('Only Administrator can delete booking records.');
       return;
     }
-    if (confirm(`Permanently delete booking ${reservationToEdit.bookingRef} for ${reservationToEdit.guestName}? This will purge all associated financial ledger items.`)) {
+    if (confirm(`Permanently delete booking ${reservationToEdit.bookingRef} for ${reservationToEdit.guestName}?`)) {
       deleteReservation(reservationToEdit.id);
       setIsReservationEditModalOpen(false);
       setReservationToEdit(null);
@@ -75,19 +84,14 @@ export const ReservationEditModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 my-8">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
-                Modify Booking {reservationToEdit.bookingRef}
-              </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                ADMIN ACCESS
-              </span>
-            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+              Modify Booking {reservationToEdit.bookingRef}
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Room #{reservationToEdit.roomNumber} ({reservationToEdit.roomType})
+              Room #{reservationToEdit.roomNumber} {reservationToEdit.roomName ? `· ${reservationToEdit.roomName}` : ''} ({reservationToEdit.roomType})
             </p>
           </div>
           <button
@@ -172,7 +176,7 @@ export const ReservationEditModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Nightly Rate (PKR)
+                Nightly Rate ({hotelInfo.currency})
               </label>
               <input
                 type="number"
@@ -186,7 +190,7 @@ export const ReservationEditModal: React.FC = () => {
 
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Amount Paid to Date (PKR)
+                Amount Paid ({hotelInfo.currency})
               </label>
               <input
                 type="number"
@@ -214,6 +218,38 @@ export const ReservationEditModal: React.FC = () => {
             </select>
           </div>
 
+          {/* Discount Control */}
+          <div className="p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/50 space-y-2">
+            <div className="flex items-center gap-1.5 font-semibold text-emerald-800 dark:text-emerald-300">
+              <Percent className="w-3.5 h-3.5" />
+              <span>Guest Discount Adjustment</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <select
+                value={discountType}
+                onChange={(e) => setDiscountType(e.target.value as DiscountType)}
+                className="p-2 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              >
+                <option value="percent">% Percent</option>
+                <option value="flat">Flat ({hotelInfo.currency})</option>
+              </select>
+              <input
+                type="number"
+                min="0"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(Math.max(0, Number(e.target.value)))}
+                className="p-2 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+              />
+              <input
+                type="text"
+                value={discountReason}
+                onChange={(e) => setDiscountReason(e.target.value)}
+                placeholder="Reason (e.g. VIP)"
+                className="p-2 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              />
+            </div>
+          </div>
+
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             {isAdmin ? (
               <button
@@ -224,7 +260,9 @@ export const ReservationEditModal: React.FC = () => {
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Booking</span>
               </button>
-            ) : <div />}
+            ) : (
+              <div />
+            )}
 
             <div className="flex items-center gap-2">
               <button

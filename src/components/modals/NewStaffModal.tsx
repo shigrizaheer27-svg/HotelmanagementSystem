@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { Department, StaffRole, ShiftType } from '../../types/hotel';
-import { X, UserPlus } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export const NewStaffModal: React.FC = () => {
-  const { isNewStaffModalOpen, setIsNewStaffModalOpen, addStaffMember } = useHotel();
+  const { isNewStaffModalOpen, setIsNewStaffModalOpen, addStaffMember, hotelInfo } = useHotel();
 
   const [name, setName] = useState('');
   const [department, setDepartment] = useState<Department>('Front Office');
@@ -16,21 +16,23 @@ export const NewStaffModal: React.FC = () => {
 
   if (!isNewStaffModalOpen) return null;
 
+  const domain = hotelInfo.website.replace(/^www\./, '').trim() || 'hotel.pk';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    if (!name.trim()) return;
 
     addStaffMember({
-      name,
+      name: name.trim(),
       department,
       role,
       shift,
-      email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@aurastayresort.com`,
-      phone: phone || '+1 (555) 401-0000',
+      email: email.trim() || `${name.trim().toLowerCase().replace(/\s+/g, '.')}@${domain}`,
+      phone: phone.trim() || '+92 345 0000000',
       status: 'on_duty',
       rating: 5.0,
       hireDate: new Date().toISOString().split('T')[0],
-      emergencyContact: emergencyContact || 'Contact on file',
+      emergencyContact: emergencyContact.trim() || 'Contact on file',
       avatarInitials: '',
     });
 
@@ -50,7 +52,7 @@ export const NewStaffModal: React.FC = () => {
               Onboard Staff Member
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Department roster & shift scheduling
+              {hotelInfo.name} · Department roster & shift scheduling
             </p>
           </div>
           <button
@@ -71,7 +73,7 @@ export const NewStaffModal: React.FC = () => {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Liam Sterling"
+              placeholder="e.g. Tariq Hussain"
               className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
             />
           </div>
@@ -88,9 +90,9 @@ export const NewStaffModal: React.FC = () => {
               >
                 <option value="Front Office">Front Office</option>
                 <option value="Housekeeping">Housekeeping</option>
-                <option value="Food & Beverage">Food & Beverage</option>
-                <option value="Engineering">Engineering</option>
-                <option value="Security">Security</option>
+                <option value="Kitchen & Balti Dining">Kitchen & Dining</option>
+                <option value="Engineering & Generator">Engineering & Facilities</option>
+                <option value="Tours & Security">Tours & Security</option>
                 <option value="Management">Management</option>
               </select>
             </div>
@@ -108,9 +110,9 @@ export const NewStaffModal: React.FC = () => {
                 <option value="Front Desk Manager">Front Desk Manager</option>
                 <option value="Room Attendant">Room Attendant</option>
                 <option value="Executive Housekeeper">Executive Housekeeper</option>
-                <option value="Concierge">Concierge</option>
-                <option value="Head Chef">Head Chef</option>
-                <option value="Maintenance Lead">Maintenance Lead</option>
+                <option value="Concierge & Guide">Concierge & Guide</option>
+                <option value="Head Chef (Balti & Continental)">Head Chef</option>
+                <option value="Maintenance & Generator Lead">Maintenance Lead</option>
                 <option value="Security Supervisor">Security Supervisor</option>
                 <option value="General Manager">General Manager</option>
               </select>
@@ -141,8 +143,8 @@ export const NewStaffModal: React.FC = () => {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 (555) 401-..."
-                className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                placeholder="+92 345 590..."
+                className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none"
               />
             </div>
 
@@ -158,6 +160,19 @@ export const NewStaffModal: React.FC = () => {
                 className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Work Email (Optional)
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={`staff@${domain}`}
+              className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
+            />
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">

@@ -1,8 +1,19 @@
-import { Room, Reservation, StaffMember, HousekeepingTask, MaintenanceRequest, GuestProfile } from '../types/hotel';
+import {
+  Room,
+  Reservation,
+  StaffMember,
+  HousekeepingTask,
+  MaintenanceRequest,
+  GuestProfile,
+  HotelInfo,
+  RoomCategory,
+  SystemUser,
+} from '../types/hotel';
 
-export const HOTEL_INFO = {
+export const DEFAULT_HOTEL_INFO: HotelInfo = {
   name: 'Mashakala Resort Shigar',
-  tagline: 'Luxury Heritage & Mountain Sanctuary · Shigar Valley, Gilgit-Baltistan',
+  tagline: 'Luxury Heritage & Mountain Sanctuary',
+  shortLocation: 'Shigar Valley, Gilgit-Baltistan',
   address: 'Main Valley Road, Near Historic Shigar Fort, District Shigar, Gilgit-Baltistan 16300, Pakistan',
   phone: '+92 5815 480120',
   mobile: '+92 345 5901234',
@@ -11,19 +22,107 @@ export const HOTEL_INFO = {
   currency: 'PKR',
   currencySymbol: 'Rs.',
   ntn: 'PK-GB-8940219-4',
-  taxRate: 0.13, // 13% Provincial GST & GB Tourism Development Levy
+  registrationNo: 'GB Tourism Authority Reg # 4019',
+  taxLabel: 'GB Tourism & GST',
+  taxRate: 0.13,
 };
 
-// Formatter for PKR currency
-export const formatPKR = (amount: number): string => {
-  return `PKR ${Math.round(amount).toLocaleString('en-PK')}`;
+// Backwards-compatible alias
+export const HOTEL_INFO = DEFAULT_HOTEL_INFO;
+
+export const formatCurrency = (amount: number, info: Pick<HotelInfo, 'currency' | 'currencySymbol'> = DEFAULT_HOTEL_INFO): string => {
+  const rounded = Math.round(amount || 0).toLocaleString('en-PK');
+  return `${info.currency} ${rounded}`;
 };
+
+export const formatPKR = (amount: number): string => {
+  return formatCurrency(amount, DEFAULT_HOTEL_INFO);
+};
+
+export const INITIAL_SYSTEM_USERS: SystemUser[] = [
+  {
+    id: 'user-master',
+    name: 'Zaheer Shigri (Master)',
+    username: 'masteradmin',
+    email: 'master@pmscloud.pk',
+    password: 'master123',
+    role: 'master_admin',
+    designation: 'Platform Master Administrator',
+    avatarInitials: 'MS',
+    phone: '+92 345 5901000',
+    createdAt: '2024-01-01',
+    isActive: true,
+    assignedPropertyId: 'all',
+  },
+  {
+    id: 'user-admin',
+    name: 'Haider Ali Shigri',
+    username: 'mashakala_admin',
+    email: 'admin@mashakalaresort.pk',
+    password: 'admin',
+    role: 'admin',
+    designation: 'Hotel Administrator',
+    avatarInitials: 'HA',
+    phone: '+92 345 5901234',
+    createdAt: '2024-01-01',
+    isActive: true,
+    assignedPropertyId: 'prop-mashakala',
+  },
+  {
+    id: 'user-manager',
+    name: 'Ali Shigri',
+    username: 'mashakala_manager',
+    email: 'manager@mashakalaresort.pk',
+    password: 'manager',
+    role: 'manager',
+    designation: 'Front Desk Operations Manager',
+    avatarInitials: 'AS',
+    phone: '+92 345 5901235',
+    createdAt: '2024-02-15',
+    isActive: true,
+    assignedPropertyId: 'prop-mashakala',
+  },
+];
+
+export const INITIAL_ROOM_CATEGORIES: RoomCategory[] = [
+  {
+    id: 'cat-1',
+    name: 'Heritage Deluxe',
+    defaultRate: 28000,
+    description: 'Traditional stone & timber rooms with orchard garden views and central heating.',
+  },
+  {
+    id: 'cat-2',
+    name: 'Karakoram View',
+    defaultRate: 38000,
+    description: 'Elevated mountain balconies overlooking the Karakoram peaks with heated floors.',
+  },
+  {
+    id: 'cat-3',
+    name: 'Riverside Chalet',
+    defaultRate: 48000,
+    description: 'Private riverside chalets featuring stone fireplaces and carved walnut interiors.',
+  },
+  {
+    id: 'cat-4',
+    name: 'Executive Shigar Suite',
+    defaultRate: 65000,
+    description: 'Spacious living quarters, private sun deck, soaking tub, and 24/7 butler service.',
+  },
+  {
+    id: 'cat-5',
+    name: 'Royal Shigar Suite',
+    defaultRate: 140000,
+    description: '360-degree valley penthouse with private heated jacuzzi and executive dining hall.',
+  },
+];
 
 export const INITIAL_ROOMS: Room[] = [
   // Floor 1 - Apricot Garden & Riverside Wing
   {
     id: 'room-101',
     number: '101',
+    name: 'Apricot Blossom Deluxe',
     floor: 1,
     type: 'Heritage Deluxe',
     status: 'occupied',
@@ -39,6 +138,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-102',
     number: '102',
+    name: 'Walnut Courtyard Deluxe',
     floor: 1,
     type: 'Heritage Deluxe',
     status: 'available',
@@ -51,6 +151,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-103',
     number: '103',
+    name: 'Shigar Riverfront Chalet',
     floor: 1,
     type: 'Riverside Chalet',
     status: 'occupied',
@@ -66,6 +167,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-104',
     number: '104',
+    name: 'Cedar Creek Chalet',
     floor: 1,
     type: 'Riverside Chalet',
     status: 'available',
@@ -79,6 +181,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-105',
     number: '105',
+    name: 'Orchard Gate Deluxe',
     floor: 1,
     type: 'Heritage Deluxe',
     status: 'reserved',
@@ -93,6 +196,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-201',
     number: '201',
+    name: 'Masherbrum Crest Room',
     floor: 2,
     type: 'Karakoram View',
     status: 'occupied',
@@ -108,6 +212,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-202',
     number: '202',
+    name: 'Gasherbrum Horizon Room',
     floor: 2,
     type: 'Karakoram View',
     status: 'available',
@@ -120,6 +225,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-203',
     number: '203',
+    name: 'Broad Peak Panorama',
     floor: 2,
     type: 'Karakoram View',
     status: 'maintenance',
@@ -133,6 +239,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-204',
     number: '204',
+    name: 'Baltoro Twin Family',
     floor: 2,
     type: 'Karakoram View',
     status: 'occupied',
@@ -148,6 +255,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-205',
     number: '205',
+    name: 'Sarfaranga Ridge View',
     floor: 2,
     type: 'Karakoram View',
     status: 'available',
@@ -162,6 +270,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-301',
     number: '301',
+    name: 'Fong-Khar Executive Suite',
     floor: 3,
     type: 'Executive Shigar Suite',
     status: 'occupied',
@@ -177,6 +286,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-302',
     number: '302',
+    name: 'Shigar Fort Heritage Suite',
     floor: 3,
     type: 'Executive Shigar Suite',
     status: 'reserved',
@@ -189,6 +299,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-303',
     number: '303',
+    name: 'Amburiq Terrace Suite',
     floor: 3,
     type: 'Executive Shigar Suite',
     status: 'available',
@@ -201,6 +312,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-304',
     number: '304',
+    name: 'Hashupi Garden Suite',
     floor: 3,
     type: 'Executive Shigar Suite',
     status: 'available',
@@ -213,6 +325,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-305',
     number: '305',
+    name: 'Alpine Basecamp Suite',
     floor: 3,
     type: 'Executive Shigar Suite',
     status: 'occupied',
@@ -230,6 +343,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-401',
     number: '401',
+    name: 'K2 Royal Sanctuary Penthouse',
     floor: 4,
     type: 'Royal Shigar Suite',
     status: 'occupied',
@@ -245,6 +359,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-402',
     number: '402',
+    name: 'Concordia Crown Penthouse',
     floor: 4,
     type: 'Royal Shigar Suite',
     status: 'available',
@@ -257,6 +372,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-403',
     number: '403',
+    name: 'Skyline Peak Room',
     floor: 4,
     type: 'Karakoram View',
     status: 'reserved',
@@ -269,6 +385,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-404',
     number: '404',
+    name: 'Upper Orchard Loft',
     floor: 4,
     type: 'Heritage Deluxe',
     status: 'available',
@@ -281,6 +398,7 @@ export const INITIAL_ROOMS: Room[] = [
   {
     id: 'room-405',
     number: '405',
+    name: 'Starlight Timber Loft',
     floor: 4,
     type: 'Heritage Deluxe',
     status: 'available',
@@ -303,6 +421,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Islamabad / Skardu, Pakistan',
     roomId: 'room-101',
     roomNumber: '101',
+    roomName: 'Apricot Blossom Deluxe',
     roomType: 'Heritage Deluxe',
     checkInDate: '2026-11-10',
     checkOutDate: '2026-11-15',
@@ -318,7 +437,10 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     roomTotal: 140000,
     mealPlanTotal: 25000,
     extrasTotal: 13000,
-    taxAmount: 23140, // 13% tax
+    discountType: 'flat',
+    discountValue: 0,
+    discountAmount: 0,
+    taxAmount: 23140,
     totalAmount: 201140,
     paidAmount: 201140,
     paymentStatus: 'paid',
@@ -338,6 +460,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Lahore, Pakistan',
     roomId: 'room-103',
     roomNumber: '103',
+    roomName: 'Shigar Riverfront Chalet',
     roomType: 'Riverside Chalet',
     checkInDate: '2026-11-11',
     checkOutDate: '2026-11-16',
@@ -352,8 +475,12 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     roomTotal: 240000,
     mealPlanTotal: 120000,
     extrasTotal: 24000,
-    taxAmount: 49920,
-    totalAmount: 433920,
+    discountType: 'percent',
+    discountValue: 10,
+    discountAmount: 38400,
+    discountReason: 'Honeymoon 10% Courtesy Discount',
+    taxAmount: 44928,
+    totalAmount: 390528,
     paidAmount: 250000,
     paymentStatus: 'partial',
     paymentMethod: 'Credit / Debit Card',
@@ -372,6 +499,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Karachi / Islamabad, Pakistan',
     roomId: 'room-201',
     roomNumber: '201',
+    roomName: 'Masherbrum Crest Room',
     roomType: 'Karakoram View',
     checkInDate: '2026-11-09',
     checkOutDate: '2026-11-13',
@@ -406,6 +534,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Karachi, Pakistan',
     roomId: 'room-204',
     roomNumber: '204',
+    roomName: 'Baltoro Twin Family',
     roomType: 'Karakoram View',
     checkInDate: '2026-11-11',
     checkOutDate: '2026-11-14',
@@ -440,6 +569,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Lahore, Pakistan',
     roomId: 'room-301',
     roomNumber: '301',
+    roomName: 'Fong-Khar Executive Suite',
     roomType: 'Executive Shigar Suite',
     checkInDate: '2026-11-08',
     checkOutDate: '2026-11-14',
@@ -475,6 +605,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Tokyo, Japan',
     roomId: 'room-305',
     roomNumber: '305',
+    roomName: 'Alpine Basecamp Suite',
     roomType: 'Executive Shigar Suite',
     checkInDate: '2026-11-10',
     checkOutDate: '2026-11-17',
@@ -509,6 +640,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Islamabad, Pakistan',
     roomId: 'room-401',
     roomNumber: '401',
+    roomName: 'K2 Royal Sanctuary Penthouse',
     roomType: 'Royal Shigar Suite',
     checkInDate: '2026-11-11',
     checkOutDate: '2026-11-18',
@@ -544,8 +676,9 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Lahore, Pakistan',
     roomId: 'room-105',
     roomNumber: '105',
+    roomName: 'Orchard Gate Deluxe',
     roomType: 'Heritage Deluxe',
-    checkInDate: '2026-11-12', // Today's upcoming arrival!
+    checkInDate: '2026-11-12',
     checkOutDate: '2026-11-15',
     adults: 2,
     children: 0,
@@ -575,8 +708,9 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'London, United Kingdom',
     roomId: 'room-302',
     roomNumber: '302',
+    roomName: 'Shigar Fort Heritage Suite',
     roomType: 'Executive Shigar Suite',
-    checkInDate: '2026-11-12', // Today's upcoming arrival!
+    checkInDate: '2026-11-12',
     checkOutDate: '2026-11-16',
     adults: 2,
     children: 0,
@@ -606,6 +740,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     cityOrCountry: 'Gujranwala, Pakistan',
     roomId: 'room-104',
     roomNumber: '104',
+    roomName: 'Cedar Creek Chalet',
     roomType: 'Riverside Chalet',
     checkInDate: '2026-11-08',
     checkOutDate: '2026-11-12',
